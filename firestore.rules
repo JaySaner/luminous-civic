@@ -1,0 +1,148 @@
+// ===============================================================
+// Assumed Data Model
+// ===============================================================
+//
+// Collection: users
+// Document ID: {userId}
+// Fields:
+//   - uid: string (required, immutable) - Firebase Auth UID
+//   - email: string (required, email format) - User's email
+//   - displayName: string (optional) - User's display name
+//   - photoURL: string (optional, uri format) - User's avatar URL
+//   - role: string (required, enum: ['citizen', 'admin']) - User's role
+//   - createdAt: string (required, date-time) - Account creation timestamp
+//
+// Collection: reports
+// Document ID: {reportId}
+// Fields:
+//   - id: string (required) - Report ID
+//   - userId: string (required, immutable) - UID of the reporting citizen
+//   - name: string (required, max 100) - Reporter's full name
+//   - address: string (required, max 255) - Incident location address
+//   - email: string (optional, email format) - Contact email
+//   - description: string (optional, max 5000) - Citizen's detailed problem description
+//   - issueType: string (required, max 100) - Type of civic issue
+//   - location: string (required, max 255) - AI-detected coordinates or landmark
+//   - authority: string (required, max 100) - Target municipal department
+//   - legalComplaint: string (required, max 5000) - Generated legal text
+//   - preview: string (required, max 1000000) - Base64 or URL of evidence image
+//   - status: string (required, enum: ['Processing', 'Authority Notified', 'Unit Assigned', 'Resolved']) - Current status
+//   - createdAt: string (required, date-time) - Report creation timestamp
+//
+// ===============================================================
+
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+    
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+    
+    function isAdmin() {
+      return isAuthenticated() &&
+        (
+          (request.auth.token.email == "jaysaner2006@gmail.com") ||
+          (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+           get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin')
+        );
+    }
+
+    function isValidEmail(email) {
+      return email is string && email.matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$");
+    }
+
+    function isValidDateString(dateStr) {
+      return dateStr is string && dateStr.matches("^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}.*Z?$");
+    }
+
+    function hasOnlyAllowedFields(fields) {
+      return request.resource.data.keys().hasOnly(fields);
+    }
+
+    function areImmutableFieldsUnchanged(fields) {
+      return !request.resource.data.diff(resource.data).affectedKeys().hasAny(fields);
+    }
+
+    // ===============================================================
+    // Domain Validators
+    // ===============================================================
+
+    function isValidUser(data) {
+      return hasOnlyAllowedFields(['uid', 'email', 'displayName', 'photoURL', 'role', 'createdAt']) &&
+             data.uid is string && data.uid.size() > 0 &&
+             data.email is string && (data.email == '' || isValidEmail(data.email)) &&
+             data.role in ['citizen', 'admin'] &&
+             isValidDateString(data.createdAt);
+    }
+
+    function isValidReport(data) {
+      return hasOnlyAllowedFields(['id', 'userId', 'name', 'address', 'email', 'description', 'issueType', 'location', 'authority', 'legalComplaint', 'preview', 'status', 'createdAt']) &&
+             data.id is string && data.id.size() > 0 &&
+             data.userId is string && data.userId.size() > 0 &&
+             data.name is string && data.name.size() > 0 && data.name.size() <= 100 &&
+             data.address is string && data.address.size() > 0 && data.address.size() <= 255 &&
+             (!('email' in data) || data.email == '' || (data.email is string && isValidEmail(data.email))) &&
+             (!('description' in data) || (data.description is string && data.description.size() <= 5000)) &&
+             data.issueType is string && data.issueType.size() > 0 && data.issueType.size() <= 100 &&
+             (!('location' in data) || (data.location is string && data.location.size() > 0 && data.location.size() <= 255)) &&
+             data.authority is string && data.authority.size() > 0 && data.authority.size() <= 100 &&
+             (!('legalComplaint' in data) || (data.legalComplaint is string && data.legalComplaint.size() > 0 && data.legalComplaint.size() <= 5000)) &&
+             (!('preview' in data) || (data.preview is string && data.preview.size() > 0 && data.preview.size() <= 1048576)) &&
+             data.status in ['Processing', 'In Progress', 'Authority Notified', 'Unit Assigned', 'Resolved'] &&
+             isValidDateString(data.createdAt);
+    }
+
+    // ===============================================================
+    // Collection Rules
+    // ===============================================================
+
+    match /users/{userId} {
+      // Users can only read their own profile, admins can read all
+      allow read: if isOwner(userId) || isAdmin();
+      
+      // Citizens can create their own profile with 'citizen' role
+      allow create: if isOwner(userId) && isValidUser(request.resource.data) && 
+                    (request.resource.data.role == 'citizen' || isAdmin());
+      
+      // Citizens cannot change their role, admins can update anything
+      allow update: if (isOwner(userId) && isValidUser(request.resource.data) && 
+                        request.resource.data.role == resource.data.role) || isAdmin();
+    }
+
+    match /reports/{reportId} {
+      // Citizens can read their own reports, admins can read all
+      allow read: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
+      
+      // Citizens can create reports for themselves
+      allow create: if isAuthenticated() && isValidReport(request.resource.data) && 
+                    request.resource.data.userId == request.auth.uid &&
+                    request.resource.data.status == 'Processing';
+      
+      // Citizens can update their own reports but cannot change status or userId
+      // Admins can update status
+      allow update: if isAuthenticated() && (
+        (resource.data.userId == request.auth.uid && isValidReport(request.resource.data) && 
+         request.resource.data.status == resource.data.status && 
+         request.resource.data.userId == resource.data.userId) || 
+        isAdmin()
+      );
+      
+      // Only admins can delete reports
+      allow delete: if isAdmin();
+    }
+
+    // Default deny
+    match /{path=**} {
+      allow read, write: if false;
+    }
+  }
+}
