@@ -1,8 +1,0 @@
-{
-  "name": "Luminous Civic",
-  "description": "AI-powered public problem reporter for modern cities. Snap a photo, detect issues, and generate legal-grade complaints instantly.",
-  "requestFramePermissions": [
-    "camera",
-    "geolocation"
-  ]
-}

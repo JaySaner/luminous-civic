@@ -53,8 +53,8 @@ export const IssueCard: React.FC<IssueCardProps> = ({ issue, onClick }) => {
         escalated ? "border-red-500/30" : "border-transparent"
       )}
     >
-      <div className="flex gap-6 items-start">
-        <div className="relative w-32 h-32 rounded-2xl overflow-hidden flex-shrink-0 shadow-inner">
+      <div className="flex flex-col sm:flex-row gap-6 items-start">
+        <div className="relative w-full sm:w-32 h-48 sm:h-32 rounded-2xl overflow-hidden flex-shrink-0 shadow-inner">
           <img 
             src={issue.image} 
             alt={issue.title} 
