@@ -228,11 +228,30 @@ export const Home = () => {
                 initial={{ opacity: 0, y: 16 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6, delay: 0.1 }}
-                className="font-headline font-extrabold text-[2.75rem] lg:text-[3.5rem] xl:text-[4rem] leading-[1.1] tracking-tight text-gray-950 mb-6"
+                className="font-headline font-extrabold leading-[1.08] tracking-tight text-gray-950 mb-6"
+                style={{ fontSize: 'clamp(2.4rem, 4.5vw, 3.75rem)' }}
               >
-                {language === 'en' && (<>Report civic issues.<br /><span style={{ color: '#173ce5' }}>Get results fast.</span></>)}
-                {language === 'hi' && (<>नागरिक समस्याएं रिपोर्ट करें।<br /><span style={{ color: '#173ce5' }}>तेज़ी से समाधान पाएं।</span></>)}
-                {language === 'mr' && (<>नागरी समस्या नोंदवा।<br /><span style={{ color: '#173ce5' }}>जलद निराकरण मिळवा।</span></>)}
+                {language === 'en' && (
+                  <>
+                    Report Civic Problems<br />
+                    <span style={{ color: '#173ce5' }}>in Seconds</span>
+                    <span className="text-gray-950"> — powered by AI.</span>
+                  </>
+                )}
+                {language === 'hi' && (
+                  <>
+                    नागरिक समस्याओं की रिपोर्ट<br />
+                    <span style={{ color: '#173ce5' }}>सेकंडों में करें</span>
+                    <span className="text-gray-950"> — AI के साथ।</span>
+                  </>
+                )}
+                {language === 'mr' && (
+                  <>
+                    नागरी समस्यांची तक्रार<br />
+                    <span style={{ color: '#173ce5' }}>सेकंदात नोंदवा</span>
+                    <span className="text-gray-950"> — AI सह।</span>
+                  </>
+                )}
               </motion.h1>
 
               {/* Supporting paragraph */}
@@ -240,10 +259,25 @@ export const Home = () => {
                 initial={{ opacity: 0, y: 12 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6, delay: 0.18 }}
-                className="text-gray-500 text-lg leading-relaxed mb-10 max-w-lg"
+                className="text-gray-500 text-lg leading-relaxed mb-6 max-w-lg"
               >
                 {t('heroSubtitle')}
               </motion.p>
+
+              {/* Inline step pills — instantly shows the flow */}
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.5, delay: 0.24 }}
+                className="flex flex-wrap items-center gap-2 mb-10 text-sm font-medium"
+              >
+                {['📸 Snap a photo', '🤖 AI detects issue', '📄 Complaint generated', '🏛️ Authority notified'].map((step, i) => (
+                  <React.Fragment key={i}>
+                    <span className="px-3 py-1.5 rounded-full bg-gray-100 text-gray-600 whitespace-nowrap">{step}</span>
+                    {i < 3 && <ArrowRight size={13} className="text-gray-300 flex-shrink-0" />}
+                  </React.Fragment>
+                ))}
+              </motion.div>
 
               {/* CTA row */}
               <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.26 }} className="flex flex-wrap items-center gap-4 mb-12">
