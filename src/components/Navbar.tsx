@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { cn } from '@/src/lib/utils';
 import { motion, AnimatePresence } from 'motion/react';
 import { useFirebase } from '../lib/FirebaseProvider';
@@ -11,10 +11,20 @@ const ADMIN_EMAIL = 'jaysaner2006@gmail.com';
 
 export const Navbar = () => {
   const location = useLocation();
+  const navigate = useNavigate();
   const { user } = useFirebase();
   const { language, setLanguage, t } = useLanguage();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const isAdmin = user?.email?.toLowerCase() === ADMIN_EMAIL.toLowerCase();
+
+  const handleStartReporting = () => {
+    setIsMobileMenuOpen(false);
+    if (location.pathname !== '/') {
+      navigate('/', { state: { scrollToReport: true } });
+    } else {
+      document.getElementById('report')?.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
 
   const navLinks = [
     { name: t('home'), path: '/' },
@@ -106,13 +116,7 @@ export const Navbar = () => {
           <motion.button 
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
-            onClick={() => {
-              if (location.pathname !== '/') {
-                window.location.href = '/#report';
-              } else {
-                document.getElementById('report')?.scrollIntoView({ behavior: 'smooth' });
-              }
-            }}
+            onClick={handleStartReporting}
             className="civic-pulse-gradient text-white px-8 py-3 rounded-full font-bold shadow-lg"
           >
             {t('startReporting')}
@@ -212,14 +216,7 @@ export const Navbar = () => {
                 )}
 
                 <button 
-                  onClick={() => {
-                    setIsMobileMenuOpen(false);
-                    if (location.pathname !== '/') {
-                      window.location.href = '/#report';
-                    } else {
-                      document.getElementById('report')?.scrollIntoView({ behavior: 'smooth' });
-                    }
-                  }}
+                  onClick={handleStartReporting}
                   className="w-full py-4 rounded-2xl civic-pulse-gradient text-white font-bold shadow-lg"
                 >
                   Start Reporting

@@ -37,9 +37,18 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children, acti
   const navigate = useNavigate();
 
   const navItems = [
-    { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-    { id: 'reports', label: 'My Reports', icon: FileText },
+    { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, path: '/dashboard' },
+    { id: 'reports', label: 'My Reports', icon: FileText, path: '/dashboard' },
+    { id: 'track', label: 'Track Case', icon: Search, path: '/track' },
   ];
+
+  const handleNavClick = (item: typeof navItems[0]) => {
+    if (item.path && item.path !== '/dashboard') {
+      navigate(item.path);
+    } else {
+      setActiveTab(item.id);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-surface flex flex-col overflow-hidden">
@@ -86,7 +95,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children, acti
                     label={item.label}
                     active={activeTab === item.id}
                     onClick={() => {
-                      setActiveTab(item.id);
+                      handleNavClick(item);
                       setIsMobileMenuOpen(false);
                     }}
                   />
@@ -141,12 +150,13 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children, acti
               {navItems.map((item) => (
                 <button 
                   key={item.id}
-                  onClick={() => setActiveTab(item.id)}
+                  onClick={() => handleNavClick(item)}
                   className={cn(
-                    "px-6 py-2 rounded-full font-bold text-sm transition-all",
+                    "px-6 py-2 rounded-full font-bold text-sm transition-all flex items-center gap-2",
                     activeTab === item.id ? "bg-primary text-white" : "text-on-surface-variant hover:bg-surface-container-low"
                   )}
                 >
+                  <item.icon size={16} />
                   {item.label}
                 </button>
               ))}

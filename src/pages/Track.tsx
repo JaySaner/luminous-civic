@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { Search, MapPin, Calendar, Construction, Map, Check, HardHat, PartyPopper, Bell, Loader2, AlertCircle } from 'lucide-react';
 import { cn } from '@/src/lib/utils';
@@ -6,20 +7,22 @@ import { db, handleFirestoreError, OperationType } from '@/src/lib/firebase';
 import { doc, getDoc } from 'firebase/firestore';
 
 export const Track = () => {
-  const [searchId, setSearchId] = useState('');
+  const [searchParams] = useSearchParams();
+  const initialId = searchParams.get('id') || searchParams.get('search') || '';
+  const [searchId, setSearchId] = useState(initialId);
   const [report, setReport] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const handleTrack = async () => {
-    if (!searchId.trim()) return;
+  const fetchReport = async (idToFetch: string) => {
+    if (!idToFetch.trim()) return;
     
     setLoading(true);
     setError(null);
     setReport(null);
 
     try {
-      const docRef = doc(db, 'reports', searchId.trim());
+      const docRef = doc(db, 'reports', idToFetch.trim());
       const docSnap = await getDoc(docRef);
 
       if (docSnap.exists()) {
@@ -28,12 +31,22 @@ export const Track = () => {
         setError("Case ID not found. Please verify the ID and try again.");
       }
     } catch (err) {
-      handleFirestoreError(err, OperationType.GET, `reports/${searchId}`);
+      handleFirestoreError(err, OperationType.GET, `reports/${idToFetch}`);
       setError("An error occurred while fetching the report.");
     } finally {
       setLoading(false);
     }
   };
+
+  const handleTrack = () => {
+    fetchReport(searchId);
+  };
+
+  useEffect(() => {
+    if (initialId) {
+      fetchReport(initialId);
+    }
+  }, [initialId]);
 
   const getStatusStep = (status: string) => {
     const steps = ['Processing', 'Authority Notified', 'Unit Assigned', 'Resolved'];

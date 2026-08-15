@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
-import { X, MapPin, Calendar, ShieldAlert, MessageSquare, CheckCircle2, AlertTriangle, ArrowLeft, Share2, Printer } from 'lucide-react';
+import { X, MapPin, Calendar, ShieldAlert, MessageSquare, CheckCircle2, AlertTriangle, ArrowLeft, Share2, Printer, Search } from 'lucide-react';
 import { cn } from '@/src/lib/utils';
 import { Issue, IssueStatus } from './IssueCard';
 import { Timeline } from './Timeline';
@@ -16,6 +17,7 @@ interface IssueDetailsProps {
 
 export const IssueDetails: React.FC<IssueDetailsProps> = ({ issue, onClose, onUpdateStatus, onFeedbackSubmit, onEscalate }) => {
   const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
+  const navigate = useNavigate();
 
   if (!issue) return null;
 
@@ -51,6 +53,16 @@ export const IssueDetails: React.FC<IssueDetailsProps> = ({ issue, onClose, onUp
           </div>
         </div>
         <div className="flex items-center gap-2">
+          <button 
+            onClick={() => {
+              onClose();
+              navigate(`/track?id=${issue.id}`);
+            }}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-primary/10 text-primary text-xs font-bold hover:bg-primary/20 transition-colors"
+          >
+            <Search size={14} />
+            Track Case
+          </button>
           <button className="p-2 hover:bg-surface-container-low rounded-full transition-colors text-on-surface-variant">
             <Share2 size={20} />
           </button>

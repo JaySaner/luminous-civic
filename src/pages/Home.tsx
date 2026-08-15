@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import {
   Check, Landmark, History, Brain, FileText, AtSign, FileCode,
   LayoutDashboard, ArrowRight, CloudUpload, Trash2, MapPin,
@@ -16,8 +16,17 @@ import { useLanguage } from '@/src/lib/LanguageProvider';
 
 export const Home = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { user } = useFirebase();
   const { language, setLanguage, t } = useLanguage();
+
+  useEffect(() => {
+    if (location.hash === '#report' || (location.state as any)?.scrollToReport) {
+      setTimeout(() => {
+        document.getElementById('report')?.scrollIntoView({ behavior: 'smooth' });
+      }, 100);
+    }
+  }, [location]);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisStep, setAnalysisStep] = useState(0);
   const [loginError, setLoginError] = useState<string | null>(null);
