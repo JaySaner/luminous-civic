@@ -211,14 +211,14 @@ export const Dashboard = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
           >
-            <h1 className="text-4xl font-extrabold font-headline tracking-tight text-on-surface">{t('dashboard')}</h1>
-            <p className="text-on-surface-variant mt-2 text-lg">Overseeing resolution of your community reports with AI-powered tracking.</p>
+            <h1 className="text-2xl sm:text-4xl font-extrabold font-headline tracking-tight text-on-surface">{t('dashboard')}</h1>
+            <p className="text-on-surface-variant mt-2 text-sm sm:text-lg">Overseeing resolution of your community reports with AI-powered tracking.</p>
           </motion.div>
           <motion.button 
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             onClick={() => navigate('/')}
-            className="civic-pulse-gradient text-white px-8 py-4 rounded-full font-bold shadow-xl flex items-center gap-2"
+            className="civic-pulse-gradient text-white px-5 sm:px-8 py-3 sm:py-4 rounded-full font-bold shadow-xl flex items-center gap-2 text-sm sm:text-base whitespace-nowrap"
           >
             <Plus size={20} />
             {t('newReport')}
@@ -226,7 +226,7 @@ export const Dashboard = () => {
         </header>
 
         {/* Stats Grid */}
-        <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <section className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
           {stats.map((stat, i) => (
             <motion.div 
               key={i}
@@ -234,7 +234,7 @@ export const Dashboard = () => {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.1 }}
               whileHover={{ y: -4 }}
-              className="glass-panel p-8 rounded-3xl shadow-sm transition-all hover:shadow-xl border border-outline-variant"
+              className="glass-panel p-4 sm:p-8 rounded-2xl sm:rounded-3xl shadow-sm transition-all hover:shadow-xl border border-outline-variant"
             >
               <div className="flex justify-between items-start mb-6">
                 <div className={cn("p-4 rounded-2xl", `bg-${stat.color}/10 text-${stat.color}`)}>
@@ -242,22 +242,22 @@ export const Dashboard = () => {
                 </div>
                 <span className={cn("text-[10px] font-bold uppercase tracking-widest", `text-${stat.color}`)}>Live</span>
               </div>
-              <h3 className="text-on-surface-variant font-bold text-xs uppercase tracking-widest mb-1">{stat.label}</h3>
-              <div className="text-4xl font-extrabold font-headline">{stat.val}</div>
+              <h3 className="text-on-surface-variant font-bold text-[10px] uppercase tracking-widest mb-1">{stat.label}</h3>
+              <div className="text-2xl sm:text-4xl font-extrabold font-headline">{stat.val}</div>
             </motion.div>
           ))}
         </section>
 
         {/* Main Content Area */}
-        <div className="grid lg:grid-cols-12 gap-12">
+        <div className="grid lg:grid-cols-12 gap-6 sm:gap-12">
           {/* Left Column: List */}
           <section className={cn(
             "transition-all duration-500",
             selectedIssue ? "lg:col-span-5" : "lg:col-span-12"
           )}>
-            <div className="bg-white rounded-[2.5rem] p-10 shadow-sm border border-outline-variant">
-              <div className="flex flex-col sm:flex-row justify-between items-center gap-6 mb-10">
-                <h2 className="text-2xl font-bold font-headline">Recent Reports</h2>
+            <div className="bg-white rounded-2xl sm:rounded-[2.5rem] p-4 sm:p-10 shadow-sm border border-outline-variant">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 sm:mb-10">
+                <h2 className="text-xl sm:text-2xl font-bold font-headline">Recent Reports</h2>
                 <div className="flex gap-4 w-full sm:w-auto">
                   <select 
                     className="appearance-none pl-6 pr-12 py-3 rounded-2xl bg-surface-container-low border-none focus:ring-2 focus:ring-primary/50 text-sm font-bold cursor-pointer"

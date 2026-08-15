@@ -196,20 +196,20 @@ export const Home = () => {
     <div className="pt-20 overflow-x-hidden">
 
       {/* ── Hero Section ── */}
-      <section className="relative min-h-[88vh] flex items-center bg-white overflow-hidden border-b border-gray-100">
+      <section className="relative min-h-[80vh] flex items-center bg-white overflow-hidden border-b border-gray-100">
 
         {/* Subtle dot-grid background — barely visible */}
         <div className="absolute inset-0 pointer-events-none" style={{ backgroundImage: 'radial-gradient(circle, #d1d5db 1px, transparent 1px)', backgroundSize: '28px 28px', opacity: 0.45 }} />
         {/* Soft blue tint top-right */}
         <div className="absolute top-0 right-0 w-[520px] h-[520px] pointer-events-none" style={{ background: 'radial-gradient(ellipse at top right, rgba(23,60,229,0.06) 0%, transparent 70%)' }} />
 
-        <div className="max-w-7xl mx-auto px-8 lg:px-12 relative z-10 w-full py-24">
-          <div className="grid lg:grid-cols-2 gap-16 items-center">
+        <div className="max-w-7xl mx-auto px-4 sm:px-8 lg:px-12 relative z-10 w-full py-10 sm:py-16 lg:py-24">
+          <div className="grid lg:grid-cols-2 gap-8 lg:gap-16 items-center">
 
             {/* ── Left: Copy ── */}
             <div>
               {/* Language selector — compact, top of column */}
-              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.4 }} className="flex mb-10">
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.4 }} className="flex mb-6 sm:mb-10">
                 <div className="flex gap-1 p-1 bg-gray-100 rounded-lg">
                   {[{ id: 'en', label: 'EN' }, { id: 'hi', label: 'हि' }, { id: 'mr', label: 'म' }].map((lang) => (
                     <button
@@ -238,7 +238,7 @@ export const Home = () => {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6, delay: 0.1 }}
                 className="font-headline font-extrabold leading-[1.08] tracking-tight text-gray-950 mb-6"
-                style={{ fontSize: 'clamp(2.4rem, 4.5vw, 3.75rem)' }}
+                style={{ fontSize: 'clamp(1.85rem, 5.5vw, 3.75rem)' }}
               >
                 {language === 'en' && (
                   <>
@@ -268,7 +268,7 @@ export const Home = () => {
                 initial={{ opacity: 0, y: 12 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6, delay: 0.18 }}
-                className="text-gray-500 text-lg leading-relaxed mb-6 max-w-lg"
+                className="text-gray-500 text-base sm:text-lg leading-relaxed mb-6 max-w-lg"
               >
                 {t('heroSubtitle')}
               </motion.p>
@@ -278,7 +278,7 @@ export const Home = () => {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ duration: 0.5, delay: 0.24 }}
-                className="flex flex-wrap items-center gap-2 mb-10 text-sm font-medium"
+                className="flex flex-wrap items-center gap-2 mb-6 sm:mb-10 text-sm font-medium"
               >
                 {['📸 Snap a photo', '🤖 AI detects issue', '📄 Complaint generated', '🏛️ Authority notified'].map((step, i) => (
                   <React.Fragment key={i}>
@@ -289,24 +289,24 @@ export const Home = () => {
               </motion.div>
 
               {/* CTA row */}
-              <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.26 }} className="flex flex-wrap items-center gap-4 mb-12">
+              <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.26 }} className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 mb-8 sm:mb-12">
                 <button
                   onClick={() => document.getElementById('report')?.scrollIntoView({ behavior: 'smooth' })}
-                  className="flex items-center gap-2 px-7 py-3.5 rounded-lg font-semibold text-base text-white transition-all hover:opacity-90 active:scale-95"
+                  className="flex items-center justify-center gap-2 px-6 sm:px-7 py-3.5 rounded-lg font-semibold text-base text-white transition-all hover:opacity-90 active:scale-95"
                   style={{ background: '#173ce5' }}
                 >
                   {t('startReporting')} <ArrowRight size={17} />
                 </button>
                 <button
                   onClick={() => { document.getElementById('report')?.scrollIntoView({ behavior: 'smooth' }); setTimeout(detectLocation, 800); }}
-                  className="flex items-center gap-2 px-7 py-3.5 rounded-lg font-semibold text-base text-gray-700 bg-white border border-gray-200 transition-all hover:border-gray-300 hover:bg-gray-50 active:scale-95"
+                  className="flex items-center justify-center gap-2 px-6 sm:px-7 py-3.5 rounded-lg font-semibold text-base text-gray-700 bg-white border border-gray-200 transition-all hover:border-gray-300 hover:bg-gray-50 active:scale-95"
                 >
                   <MapPin size={17} className="text-gray-400" /> {t('useLocation')}
                 </button>
               </motion.div>
 
               {/* Stats row — minimal, data-driven */}
-              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.6, delay: 0.38 }} className="flex items-center gap-8 pt-8 border-t border-gray-100">
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.6, delay: 0.38 }} className="flex items-center gap-4 sm:gap-8 pt-6 sm:pt-8 border-t border-gray-100">
                 {[
                   { value: '85%', label: 'Time saved vs traditional filing' },
                   { value: '3×', label: 'Faster issue resolution' },
@@ -413,17 +413,17 @@ export const Home = () => {
       </section>
 
       {/* ── About / Features Section ── */}
-      <section className="py-32 bg-surface-container-low relative">
-        <div className="max-w-7xl mx-auto px-8">
-          <div className="text-center mb-20">
+      <section className="py-16 sm:py-24 lg:py-32 bg-surface-container-low relative">
+        <div className="max-w-7xl mx-auto px-4 sm:px-8">
+          <div className="text-center mb-10 sm:mb-16 lg:mb-20">
             <motion.span initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }} className="inline-block px-4 py-1.5 mb-4 rounded-full text-xs font-bold tracking-wider uppercase" style={{ background: 'rgba(23,60,229,0.08)', color: '#173ce5' }}>
               Why Luminous Civic
             </motion.span>
-            <motion.h2 initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="font-headline font-bold text-4xl lg:text-5xl mb-6">{t('aboutTitle')}</motion.h2>
-            <motion.p initial={{ opacity: 0, y: 10 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: 0.1 }} className="text-on-surface-variant text-lg max-w-2xl mx-auto">{t('aboutSubtitle')}</motion.p>
+            <motion.h2 initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="font-headline font-bold text-2xl sm:text-4xl lg:text-5xl mb-4 sm:mb-6">{t('aboutTitle')}</motion.h2>
+            <motion.p initial={{ opacity: 0, y: 10 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: 0.1 }} className="text-on-surface-variant text-base sm:text-lg max-w-2xl mx-auto">{t('aboutSubtitle')}</motion.p>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-8">
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-8">
             {[
               { icon: Check, title: t('feature1Title'), desc: t('feature1Desc'), gradient: 'from-blue-500 to-indigo-600', bg: 'bg-blue-50', extra: 'Supports JPEG, PNG, HEIC formats. Works even in low light.' },
               { icon: Landmark, title: t('feature2Title'), desc: t('feature2Desc'), gradient: 'from-violet-500 to-purple-600', bg: 'bg-violet-50', extra: 'Covers all municipal bodies — MCGM, PMC, NMMC, PWD, MSEDCL and more.' },
@@ -436,7 +436,7 @@ export const Home = () => {
                 viewport={{ once: true }}
                 transition={{ delay: i * 0.1 }}
                 whileHover={{ y: -8, scale: 1.02 }}
-                className="bg-white p-10 rounded-3xl shadow-sm hover:shadow-2xl transition-all duration-500 group border border-outline-variant relative overflow-hidden"
+                className="bg-white p-6 sm:p-10 rounded-3xl shadow-sm hover:shadow-2xl transition-all duration-500 group border border-outline-variant relative overflow-hidden"
               >
                 <div className="absolute top-0 right-0 w-32 h-32 rounded-full opacity-5 -translate-y-8 translate-x-8" style={{ background: `linear-gradient(135deg, ${item.bg === 'bg-blue-50' ? '#173ce5' : item.bg === 'bg-violet-50' ? '#632ce5' : '#005e6a'}, transparent)` }} />
                 <div className={cn("w-16 h-16 rounded-2xl flex items-center justify-center mb-8 group-hover:scale-110 transition-transform", item.bg)}>
@@ -452,20 +452,20 @@ export const Home = () => {
       </section>
 
       {/* ── Seamless Flow Section ── */}
-      <section className="py-32 relative overflow-hidden" style={{ background: 'linear-gradient(180deg, #f7f9fb 0%, #eef1ff 50%, #f7f9fb 100%)' }}>
+      <section className="py-16 sm:py-24 lg:py-32 relative overflow-hidden" style={{ background: 'linear-gradient(180deg, #f7f9fb 0%, #eef1ff 50%, #f7f9fb 100%)' }}>
         {/* Background decoration */}
         <div className="absolute inset-0 pointer-events-none overflow-hidden">
           <div className="absolute top-20 left-10 w-64 h-64 rounded-full opacity-30" style={{ background: 'radial-gradient(circle, rgba(23,60,229,0.1) 0%, transparent 70%)' }} />
           <div className="absolute bottom-20 right-10 w-80 h-80 rounded-full opacity-30" style={{ background: 'radial-gradient(circle, rgba(99,44,229,0.1) 0%, transparent 70%)' }} />
         </div>
 
-        <div className="max-w-7xl mx-auto px-8 relative z-10">
+        <div className="max-w-7xl mx-auto px-4 sm:px-8 relative z-10">
           {/* Header */}
-          <div className="text-center mb-20">
+          <div className="text-center mb-10 sm:mb-16 lg:mb-20">
             <motion.span initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }} className="inline-block px-4 py-1.5 mb-4 rounded-full text-xs font-bold tracking-wider uppercase" style={{ background: 'rgba(99,44,229,0.08)', color: '#632ce5' }}>
               How It Works
             </motion.span>
-            <motion.h2 initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="font-headline font-bold text-4xl lg:text-5xl mb-4">
+            <motion.h2 initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="font-headline font-bold text-2xl sm:text-4xl lg:text-5xl mb-4">
               The Seamless Flow
             </motion.h2>
             <motion.p initial={{ opacity: 0, y: 10 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: 0.1 }} className="text-on-surface-variant text-lg max-w-xl mx-auto">
@@ -568,7 +568,7 @@ export const Home = () => {
           </div>
 
           {/* Mobile / Tablet Flow — vertical with arrows */}
-          <div className="flex lg:hidden flex-col items-center gap-0">
+          <div className="flex lg:hidden flex-col items-center gap-0 w-full">
             {flowSteps.map((item, i) => (
               <React.Fragment key={i}>
                 <motion.div
@@ -576,7 +576,7 @@ export const Home = () => {
                   whileInView={{ opacity: 1, x: 0 }}
                   viewport={{ once: true }}
                   transition={{ delay: i * 0.1 }}
-                  className="flex items-start gap-6 w-full max-w-lg bg-white rounded-2xl p-6 shadow-md border border-outline-variant"
+                  className="flex items-start gap-4 sm:gap-6 w-full bg-white rounded-2xl p-4 sm:p-6 shadow-md border border-outline-variant"
                 >
                   <div className="relative flex-shrink-0">
                     <div className={cn("w-16 h-16 rounded-2xl flex items-center justify-center text-white shadow-xl bg-gradient-to-br", item.color)}>
@@ -611,11 +611,11 @@ export const Home = () => {
           </div>
 
           {/* CTA under flow */}
-          <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: 0.6 }} className="text-center mt-16">
-            <p className="text-on-surface-variant mb-6 text-base">Ready to experience it yourself?</p>
+          <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: 0.6 }} className="text-center mt-10 sm:mt-16">
+            <p className="text-on-surface-variant mb-4 sm:mb-6 text-base">Ready to experience it yourself?</p>
             <button
               onClick={() => document.getElementById('report')?.scrollIntoView({ behavior: 'smooth' })}
-              className="inline-flex items-center gap-2 px-10 py-4 rounded-full font-bold text-white text-lg shadow-xl hover:scale-105 transition-transform"
+              className="inline-flex items-center gap-2 px-7 sm:px-10 py-3.5 sm:py-4 rounded-full font-bold text-white text-base sm:text-lg shadow-xl hover:scale-105 transition-transform"
               style={{ background: 'linear-gradient(135deg, #173ce5, #632ce5)', boxShadow: '0 8px 24px rgba(99,44,229,0.35)' }}
             >
               File a Complaint Now <ArrowRight size={20} />
@@ -625,22 +625,22 @@ export const Home = () => {
       </section>
 
       {/* ── Report Interaction ── */}
-      <section className="py-24 bg-surface-container-low/30 scroll-mt-20" id="report">
-        <div className="max-w-4xl mx-auto px-8">
+      <section className="py-12 sm:py-20 lg:py-24 bg-surface-container-low/30 scroll-mt-20" id="report">
+        <div className="max-w-4xl mx-auto px-4 sm:px-8">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            className="bg-white rounded-3xl p-12 shadow-2xl relative overflow-hidden border border-outline-variant"
+            className="bg-white rounded-2xl sm:rounded-3xl p-5 sm:p-8 lg:p-12 shadow-2xl relative overflow-hidden border border-outline-variant"
           >
             <div className="absolute top-0 left-0 w-2 h-full civic-pulse-gradient" />
             <div className="absolute top-0 right-0 w-64 h-64 rounded-full opacity-5 -translate-y-20 translate-x-20" style={{ background: 'radial-gradient(circle, #632ce5, transparent)' }} />
-            <h2 className="font-headline font-bold text-3xl mb-2 text-center">{t('readyToFix')}</h2>
-            <p className="text-center text-on-surface-variant mb-10 text-sm">Fill in your details, upload a photo, and let AI do the rest.</p>
+            <h2 className="font-headline font-bold text-2xl sm:text-3xl mb-2 text-center">{t('readyToFix')}</h2>
+            <p className="text-center text-on-surface-variant mb-6 sm:mb-10 text-sm">Fill in your details, upload a photo, and let AI do the rest.</p>
 
-            <div className="grid md:grid-cols-2 gap-12">
+            <div className="grid md:grid-cols-2 gap-6 sm:gap-12">
               <div className="space-y-6">
-                <label className="dashed-border min-h-[300px] flex flex-col items-center justify-center p-8 text-center group hover:bg-primary/5 transition-colors cursor-pointer relative rounded-2xl">
+                <label className="dashed-border min-h-[220px] sm:min-h-[300px] flex flex-col items-center justify-center p-5 sm:p-8 text-center group hover:bg-primary/5 transition-colors cursor-pointer relative rounded-2xl">
                   <input type="file" className="hidden" onChange={handleFileUpload} accept="image/*" />
                   <div className="w-16 h-16 rounded-full bg-primary/10 text-primary flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
                     <CloudUpload size={32} />
@@ -751,20 +751,20 @@ export const Home = () => {
       </section>
 
       {/* ── Features Bento Grid ── */}
-      <section className="py-32 bg-surface-container-low/50">
-        <div className="max-w-7xl mx-auto px-8">
-          <div className="text-center mb-16">
+      <section className="py-16 sm:py-24 lg:py-32 bg-surface-container-low/50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-8">
+          <div className="text-center mb-8 sm:mb-16">
             <span className="inline-block px-4 py-1.5 mb-4 rounded-full text-xs font-bold tracking-wider uppercase" style={{ background: 'rgba(23,60,229,0.08)', color: '#173ce5' }}>Capabilities</span>
-            <h2 className="font-headline font-bold text-4xl">Everything You Need</h2>
+            <h2 className="font-headline font-bold text-2xl sm:text-4xl">Everything You Need</h2>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-6 lg:grid-cols-12 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-4 sm:gap-6">
             {[
-              { icon: Brain, title: "AI Detection", desc: "Computer vision trained on urban maintenance datasets. Identifies 40+ civic issue types with 95%+ accuracy.", span: "md:col-span-3 lg:col-span-4", color: "text-primary", bg: "bg-blue-50" },
-              { icon: FileText, title: "Complaint Generator", desc: "NLP engine drafts persuasive, legally-sound reports in proper government format with all required citations.", span: "md:col-span-3 lg:col-span-4", color: "text-secondary", bg: "bg-violet-50" },
-              { icon: AtSign, title: "Email Integration", desc: "Direct bridge to official city council and utility inboxes. CC authorities automatically for faster response.", span: "md:col-span-6 lg:col-span-4", color: "text-tertiary", bg: "bg-teal-50" },
-              { icon: FileCode, title: "Smart PDF Export", desc: "Download evidence-packed documents for your personal records or physical filing with a single click.", span: "md:col-span-4 lg:col-span-6", color: "text-primary", bg: "bg-indigo-50" },
-              { icon: LayoutDashboard, title: "Dashboard", desc: "Centralized hub for all your civic activities and history.", span: "md:col-span-2 lg:col-span-3", color: "text-secondary", bg: "bg-purple-50" },
-              { icon: Clock, title: "Follow-Up", desc: "Automated nudges if responses are delayed beyond SLA timelines.", span: "md:col-span-6 lg:col-span-3", color: "text-tertiary", bg: "bg-emerald-50" }
+              { icon: Brain, title: "AI Detection", desc: "Computer vision trained on urban maintenance datasets. Identifies 40+ civic issue types with 95%+ accuracy.", span: "sm:col-span-1 lg:col-span-4", color: "text-primary", bg: "bg-blue-50" },
+              { icon: FileText, title: "Complaint Generator", desc: "NLP engine drafts persuasive, legally-sound reports in proper government format with all required citations.", span: "sm:col-span-1 lg:col-span-4", color: "text-secondary", bg: "bg-violet-50" },
+              { icon: AtSign, title: "Email Integration", desc: "Direct bridge to official city council and utility inboxes. CC authorities automatically for faster response.", span: "sm:col-span-2 lg:col-span-4", color: "text-tertiary", bg: "bg-teal-50" },
+              { icon: FileCode, title: "Smart PDF Export", desc: "Download evidence-packed documents for your personal records or physical filing with a single click.", span: "sm:col-span-2 lg:col-span-6", color: "text-primary", bg: "bg-indigo-50" },
+              { icon: LayoutDashboard, title: "Dashboard", desc: "Centralized hub for all your civic activities and history.", span: "sm:col-span-1 lg:col-span-3", color: "text-secondary", bg: "bg-purple-50" },
+              { icon: Clock, title: "Follow-Up", desc: "Automated nudges if responses are delayed beyond SLA timelines.", span: "sm:col-span-1 lg:col-span-3", color: "text-tertiary", bg: "bg-emerald-50" }
             ].map((feature, i) => (
               <motion.div
                 key={i}
@@ -773,7 +773,7 @@ export const Home = () => {
                 viewport={{ once: true }}
                 transition={{ delay: i * 0.08 }}
                 whileHover={{ scale: 1.02, y: -4 }}
-                className={cn(feature.span, "glass-panel p-8 rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 group")}
+                className={cn(feature.span, "glass-panel p-5 sm:p-8 rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 group")}
               >
                 <div className={cn("w-12 h-12 rounded-xl flex items-center justify-center mb-5 group-hover:scale-110 transition-transform", feature.bg)}>
                   <feature.icon className={feature.color} size={24} />
@@ -787,15 +787,15 @@ export const Home = () => {
       </section>
 
       {/* ── Stats Section ── */}
-      <section className="py-32 relative overflow-hidden" style={{ background: 'linear-gradient(135deg, #0a0e27 0%, #130a2e 100%)' }}>
+      <section className="py-16 sm:py-24 lg:py-32 relative overflow-hidden" style={{ background: 'linear-gradient(135deg, #0a0e27 0%, #130a2e 100%)' }}>
         <div className="absolute inset-0 pointer-events-none">
           <div className="absolute top-0 left-1/4 w-96 h-96 rounded-full opacity-10" style={{ background: 'radial-gradient(circle, #173ce5, transparent)', filter: 'blur(60px)' }} />
           <div className="absolute bottom-0 right-1/4 w-96 h-96 rounded-full opacity-10" style={{ background: 'radial-gradient(circle, #632ce5, transparent)', filter: 'blur(60px)' }} />
         </div>
-        <div className="max-w-7xl mx-auto px-8 relative z-10">
-          <motion.h2 initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="font-headline font-bold text-3xl mb-4 text-center text-white">Built for Scale</motion.h2>
-          <motion.p initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }} transition={{ delay: 0.1 }} className="text-white/40 text-center mb-16 text-base max-w-xl mx-auto">Luminous Civic is engineered to handle thousands of citizens and millions of complaints with zero friction.</motion.p>
-          <div className="grid md:grid-cols-4 gap-6">
+        <div className="max-w-7xl mx-auto px-4 sm:px-8 relative z-10">
+          <motion.h2 initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="font-headline font-bold text-2xl sm:text-3xl mb-4 text-center text-white">Built for Scale</motion.h2>
+          <motion.p initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }} transition={{ delay: 0.1 }} className="text-white/40 text-center mb-8 sm:mb-16 text-sm sm:text-base max-w-xl mx-auto">Luminous Civic is engineered to handle thousands of citizens and millions of complaints with zero friction.</motion.p>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6">
             {[
               { val: "85%", label: "Time Saved", desc: "Average reduction in report filing time for citizens vs. traditional methods.", icon: TrendingUp, color: "#60a5fa" },
               { val: "Simple", label: "Easy to Use", desc: "Designed for everyone — from teenagers to senior citizens with no technical knowledge.", icon: Users, color: "#a78bfa" },
@@ -809,13 +809,13 @@ export const Home = () => {
                 viewport={{ once: true }}
                 transition={{ delay: i * 0.1 }}
                 whileHover={{ y: -6 }}
-                className="p-8 rounded-2xl transition-all duration-300"
+                className="p-5 sm:p-8 rounded-2xl transition-all duration-300"
                 style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', backdropFilter: 'blur(10px)' }}
               >
                 <div className="w-10 h-10 rounded-xl flex items-center justify-center mb-4" style={{ background: `${stat.color}20` }}>
                   <stat.icon size={20} style={{ color: stat.color }} />
                 </div>
-                <h4 className="font-headline font-bold text-4xl mb-1" style={{ color: stat.color }}>{stat.val}</h4>
+                <h4 className="font-headline font-bold text-2xl sm:text-4xl mb-1" style={{ color: stat.color }}>{stat.val}</h4>
                 <p className="font-bold text-white mb-2">{stat.label}</p>
                 <p className="text-white/40 text-sm leading-relaxed">{stat.desc}</p>
               </motion.div>
@@ -840,7 +840,7 @@ export const Home = () => {
                   <Brain className="text-primary animate-pulse" size={48} />
                 </div>
               </motion.div>
-              <h2 className="text-white font-headline font-extrabold text-4xl mb-4 tracking-tight">Luminous AI Analysis</h2>
+              <h2 className="text-white font-headline font-extrabold text-2xl sm:text-4xl mb-4 tracking-tight">Luminous AI Analysis</h2>
               <p className="text-white/50 font-bold uppercase tracking-[0.3em] text-xs mb-12">Processing Civic Intelligence</p>
               <div className="space-y-8">
                 <div className="w-full bg-white/10 h-1.5 rounded-full overflow-hidden">

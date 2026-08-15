@@ -56,21 +56,21 @@ export const Track = () => {
   const currentStepIndex = report ? getStatusStep(report.status) : -1;
 
   return (
-    <main className="pt-32 pb-20 px-6 max-w-screen-xl mx-auto">
-      <header className="mb-16 text-center max-w-3xl mx-auto">
-        <h1 className="font-headline font-extrabold text-4xl md:text-5xl tracking-tight text-on-surface mb-6">
+    <main className="pt-24 sm:pt-32 pb-12 sm:pb-20 px-4 sm:px-6 max-w-screen-xl mx-auto">
+      <header className="mb-8 sm:mb-16 text-center max-w-3xl mx-auto">
+        <h1 className="font-headline font-extrabold text-2xl sm:text-4xl md:text-5xl tracking-tight text-on-surface mb-4 sm:mb-6">
           Resolution <span className="bg-clip-text text-transparent bg-gradient-to-r from-primary to-secondary">Intelligence</span>
         </h1>
-        <p className="text-on-surface-variant text-lg mb-10 leading-relaxed">
+        <p className="text-on-surface-variant text-base sm:text-lg mb-6 sm:mb-10 leading-relaxed">
           Enter your unique complaint ID to witness the real-time AI-orchestrated restoration of your civic environment.
         </p>
         
         <div className="relative max-w-xl mx-auto group">
           <div className="absolute -inset-1 civic-pulse-gradient rounded-full blur opacity-20 group-focus-within:opacity-40 transition duration-500"></div>
-          <div className="relative flex items-center bg-white rounded-full p-2 shadow-xl">
-            <Search className="ml-6 text-on-surface-variant/50" size={20} />
+          <div className="relative flex flex-col sm:flex-row items-stretch sm:items-center bg-white rounded-2xl sm:rounded-full p-2 shadow-xl gap-2 sm:gap-0">
+            <Search className="ml-3 sm:ml-6 text-on-surface-variant/50 flex-shrink-0" size={20} />
             <input 
-              className="w-full bg-transparent border-none focus:ring-0 px-4 py-3 text-on-surface font-medium placeholder:text-on-surface-variant/40" 
+              className="w-full bg-transparent border-none focus:ring-0 px-3 sm:px-4 py-3 text-on-surface font-medium placeholder:text-on-surface-variant/40 text-sm sm:text-base" 
               placeholder="Enter Complaint ID (e.g., LC-8829-X)" 
               type="text"
               value={searchId}
@@ -80,7 +80,7 @@ export const Track = () => {
             <button 
               onClick={handleTrack}
               disabled={loading}
-              className="civic-pulse-gradient text-white px-8 py-3 rounded-full font-bold transition-all hover:shadow-primary/25 disabled:opacity-50 flex items-center gap-2"
+              className="civic-pulse-gradient text-white px-6 sm:px-8 py-3 rounded-full font-bold transition-all hover:shadow-primary/25 disabled:opacity-50 flex items-center gap-2 whitespace-nowrap w-full sm:w-auto justify-center mt-1 sm:mt-0"
             >
               {loading && <Loader2 size={18} className="animate-spin" />}
               Track Case
