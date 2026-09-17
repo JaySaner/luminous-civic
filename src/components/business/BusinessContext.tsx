@@ -19,9 +19,10 @@ interface BusinessContextType {
   business: Business | null;
   businesses: Business[];
   switchBusiness: (businessId: string) => Promise<void>;
-  login: (email: string, pass: string) => Promise<void>;
+  login: (email: string, pass: string) => Promise<{ role: 'super_admin' | 'business_user'; businessUser?: BusinessUser; superAdmin?: SuperAdminUser }>;
   loginGoogle: () => Promise<void>;
   loginDemoAdmin: () => void;
+  loginDemoBusiness: () => void;
   logout: () => Promise<void>;
   refreshBusiness: () => Promise<void>;
 }
@@ -184,6 +185,7 @@ export const BusinessProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         const bizData = await getBusiness(res.businessUser.businessId);
         await saveSession('business_user', null, res.businessUser, bizData);
       }
+      return res;
     } finally {
       setLoading(false);
     }
@@ -208,6 +210,22 @@ export const BusinessProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       createdAt: new Date().toISOString()
     };
     await saveSession('super_admin', sa, null, null);
+    setLoading(false);
+  };
+
+  const loginDemoBusiness = async () => {
+    const bu: BusinessUser = {
+      uid: 'demo_biz_user',
+      businessId: 'default_biz',
+      email: 'business@luminouscivic.com',
+      name: 'Business Operations Manager',
+      role: 'admin',
+      status: 'active',
+      createdAt: new Date().toISOString()
+    };
+    const all = await listBusinesses();
+    const activeBiz = all.length > 0 ? all[0] : null;
+    await saveSession('business_user', null, bu, activeBiz);
     setLoading(false);
   };
 
@@ -245,6 +263,7 @@ export const BusinessProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         login,
         loginGoogle,
         loginDemoAdmin,
+        loginDemoBusiness,
         logout,
         refreshBusiness
       }}
