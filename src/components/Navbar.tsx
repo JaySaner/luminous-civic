@@ -30,6 +30,7 @@ export const Navbar = () => {
     { name: t('home'), path: '/' },
     { name: t('dashboard'), path: '/dashboard' },
     { name: t('track'), path: '/track' },
+    { name: '🏢 Business Portal', path: '/business/login' },
     ...(isAdmin ? [{ name: '🔒 Admin', path: '/admin' }] : []),
   ];
 

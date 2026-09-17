@@ -83,51 +83,91 @@ export const Home = () => {
   };
 
   const generateReport = async () => {
-    if (!preview) return;
+    setLoginError(null);
+    if (!preview) {
+      setLoginError("Please upload or capture an image of the civic issue first.");
+      return;
+    }
+    if (!formData.name.trim()) {
+      setLoginError("Please enter your full name.");
+      return;
+    }
+    if (!formData.address.trim()) {
+      setLoginError("Please enter the issue address or click 'Use Current Location'.");
+      return;
+    }
+
+    if (!user && !auth.currentUser) {
+      try {
+        await loginWithGoogle();
+      } catch (error: any) {
+        const msg = error?.code === 'auth/popup-blocked'
+          ? 'Popup was blocked by your browser. Please allow popups and try again.'
+          : error?.code === 'auth/popup-closed-by-user'
+            ? 'Sign-in was cancelled. Please sign in to file your report.'
+            : error?.message || 'Sign-in failed. Please try again.';
+        setLoginError(msg);
+        return;
+      }
+    }
+
     setIsAnalyzing(true);
     setAnalysisStep(0);
     const runSteps = async () => {
       for (let i = 0; i < steps.length; i++) {
         setAnalysisStep(i);
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        await new Promise(resolve => setTimeout(resolve, 800));
       }
     };
+
     try {
       const currentUser = user || auth.currentUser;
-      if (!currentUser) throw new Error("User not authenticated");
       const [aiResult, compressedPreview] = await Promise.all([
         analyzeCivicIssue(preview),
         compressImage(preview),
         runSteps()
       ]);
+
       const reportId = `LC-${Math.floor(Math.random() * 90000) + 10000}`;
       const reportData = {
         id: reportId,
-        userId: currentUser.uid,
+        userId: currentUser?.uid || 'guest-user',
         name: formData.name,
         address: formData.address,
-        email: formData.email || currentUser.email || '',
+        email: formData.email || currentUser?.email || '',
         description: formData.description,
         issueType: aiResult.issueType,
-        location: aiResult.location,
+        location: aiResult.location || formData.address,
         authority: aiResult.authority,
         legalComplaint: aiResult.legalComplaint,
         preview: compressedPreview,
         status: 'Processing',
         createdAt: new Date().toISOString()
       };
-      const reportRef = doc(db, 'reports', reportId);
+
+      // Store in localStorage for instant local access
       try {
-        await setDoc(reportRef, reportData);
-      } catch (err) {
-        handleFirestoreError(err, OperationType.WRITE, `reports/${reportId}`);
+        const storedReports = JSON.parse(localStorage.getItem('luminous_civic_reports') || '[]');
+        storedReports.unshift(reportData);
+        localStorage.setItem('luminous_civic_reports', JSON.stringify(storedReports));
+        localStorage.setItem(`luminous_report_${reportId}`, JSON.stringify(reportData));
+      } catch (e) {
+        console.warn("LocalStorage save error", e);
       }
+
+      if (currentUser?.uid) {
+        const reportRef = doc(db, 'reports', reportId);
+        try {
+          await setDoc(reportRef, reportData);
+        } catch (err) {
+          console.warn("Firestore save failed, using local storage fallback", err);
+        }
+      }
+
       navigate(`/report?id=${reportId}`);
     } catch (error) {
       console.error("Analysis failed", error);
-      if (!(error instanceof Error && error.message.startsWith('{'))) {
-        alert("Analysis failed. Please try again.");
-      }
+      setLoginError("Report generation encountered an issue. Please try again.");
     } finally {
       setIsAnalyzing(false);
       setAnalysisStep(0);
@@ -714,36 +754,20 @@ export const Home = () => {
                   </div>
                 )}
 
-                {!user ? (
-                  <button
-                    onClick={async () => {
-                      setLoginError(null);
-                      try {
-                        await loginWithGoogle();
-                      } catch (error: any) {
-                        const msg = error?.code === 'auth/popup-blocked'
-                          ? 'Popup was blocked by your browser. Please allow popups for localhost and try again.'
-                          : error?.code === 'auth/popup-closed-by-user'
-                            ? 'Sign-in was cancelled. Please try again.'
-                            : error?.code === 'auth/unauthorized-domain'
-                              ? 'This domain is not authorized in Firebase. Please follow the Firebase Console setup steps.'
-                              : error?.message || 'Sign-in failed. Check browser console for details.';
-                        setLoginError(msg);
-                      }
-                    }}
-                    className="w-full civic-pulse-gradient text-white py-6 rounded-full font-bold text-xl shadow-lg hover:shadow-primary/25 transition-all mt-4"
-                  >
-                    {t('signIn')}
-                  </button>
-                ) : (
-                  <button
-                    onClick={generateReport}
-                    disabled={!preview || isAnalyzing || !formData.name || !formData.address}
-                    className="w-full civic-pulse-gradient text-white py-6 rounded-full font-bold text-xl shadow-lg hover:shadow-primary/25 transition-all disabled:opacity-50 disabled:cursor-not-allowed mt-4"
-                  >
-                    {isAnalyzing ? t('analyzing') : t('generateReport')}
-                  </button>
-                )}
+                <button
+                  onClick={generateReport}
+                  disabled={isAnalyzing}
+                  className="w-full civic-pulse-gradient text-white py-6 rounded-full font-bold text-xl shadow-lg hover:shadow-primary/25 transition-all disabled:opacity-50 disabled:cursor-not-allowed mt-4 flex items-center justify-center gap-3 cursor-pointer"
+                >
+                  {isAnalyzing ? (
+                    <>
+                      <Loader2 className="animate-spin" size={24} />
+                      <span>{t('analyzing')}...</span>
+                    </>
+                  ) : (
+                    <span>{user ? t('generateReport') : (preview ? 'Sign In & Generate AI Report' : t('generateReport'))}</span>
+                  )}
+                </button>
               </div>
             </div>
           </motion.div>

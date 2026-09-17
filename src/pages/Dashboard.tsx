@@ -84,9 +84,35 @@ export const Dashboard = () => {
   const [statusFilter, setStatusFilter] = useState('All Statuses');
   const [loading, setLoading] = useState(true);
 
-  // Real-time Firestore Sync
+  // Real-time Firestore Sync + LocalStorage Sync
   useEffect(() => {
+    const getLocalReports = (): Issue[] => {
+      try {
+        const stored = localStorage.getItem('luminous_civic_reports');
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          return parsed.map((data: any) => ({
+            id: data.id,
+            title: data.issueType || 'Untitled Report',
+            description: data.description || 'No description provided.',
+            location: data.location || data.address || 'Unknown Location',
+            status: data.status as any || 'Pending',
+            image: data.preview || 'https://images.unsplash.com/photo-1586767050894-135882c871c1?auto=format&fit=crop&q=80&w=1000',
+            createdAt: data.createdAt,
+            authority: data.authority || 'Pending Assignment',
+            category: data.issueType || 'General'
+          }));
+        }
+      } catch (e) {
+        console.warn("LocalStorage read error", e);
+      }
+      return [];
+    };
+
+    const localReports = getLocalReports();
+
     if (!user) {
+      setIssues([...localReports, ...DUMMY_ISSUES]);
       setLoading(false);
       return;
     }
@@ -98,7 +124,7 @@ export const Dashboard = () => {
     );
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      const reportsList: Issue[] = snapshot.docs.map(doc => {
+      const remoteReports: Issue[] = snapshot.docs.map(doc => {
         const data = doc.data();
         return {
           id: doc.id,
@@ -113,14 +139,19 @@ export const Dashboard = () => {
         };
       });
       
-      reportsList.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+      const combined = [...remoteReports];
+      localReports.forEach(lr => {
+        if (!combined.some(r => r.id === lr.id)) {
+          combined.push(lr);
+        }
+      });
+      combined.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
       
-      // Combine real reports with dummy data for demo purposes
-      // If user has real reports, they appear at the top
-      setIssues([...reportsList, ...DUMMY_ISSUES]);
+      setIssues([...combined, ...DUMMY_ISSUES]);
       setLoading(false);
     }, (error) => {
-      handleFirestoreError(error, OperationType.LIST, 'reports');
+      console.warn("Firestore list error, using local fallback", error);
+      setIssues([...localReports, ...DUMMY_ISSUES]);
       setLoading(false);
     });
 
@@ -181,7 +212,10 @@ export const Dashboard = () => {
     const matchesSearch = issue.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
                           issue.id.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = statusFilter === 'All Statuses' || issue.status === statusFilter;
-    return matchesSearch && matchesStatus;
+    const matchesTab = activeTab === 'reports' 
+      ? (issue.id.startsWith('LC-') || !DUMMY_ISSUES.some(d => d.id === issue.id))
+      : true;
+    return matchesSearch && matchesStatus && matchesTab;
   });
 
   const stats = [

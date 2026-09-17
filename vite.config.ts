@@ -12,12 +12,15 @@ export default defineConfig(({mode}) => {
     },
     resolve: {
       alias: {
+        '@/components': path.resolve(__dirname, './src/components'),
+        '@/lib': path.resolve(__dirname, './src/lib'),
+        '@/pages': path.resolve(__dirname, './src/pages'),
         '@': path.resolve(__dirname, '.'),
       },
     },
     server: {
       // HMR is disabled in AI Studio via DISABLE_HMR env var.
-      // Do not modifyâfile watching is disabled to prevent flickering during agent edits.
+      // Do not modify—file watching is disabled to prevent flickering during agent edits.
       hmr: process.env.DISABLE_HMR !== 'true',
     },
   };

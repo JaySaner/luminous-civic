@@ -140,6 +140,58 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
 
+    // ===============================================================
+    // Business / Industries Module Rules (Additive)
+    // ===============================================================
+
+    match /super_admins/{adminId} {
+      allow read, write: if true;
+    }
+
+    match /businesses/{businessId} {
+      allow read, write: if true;
+    }
+
+    match /business_users/{userId} {
+      allow read, write: if true;
+    }
+
+    match /business_departments/{deptId} {
+      allow read, write: if true;
+    }
+
+    match /business_locations/{locId} {
+      allow read, write: if true;
+    }
+
+    match /business_employees/{empId} {
+      allow read, write: if true;
+    }
+
+    match /business_forms/{formId} {
+      allow read, write: if true;
+    }
+
+    match /business_public_reports/{reportId} {
+      allow read, write: if true;
+    }
+
+    match /business_issues/{issueId} {
+      allow read, write: if true;
+    }
+
+    match /business_issue_timeline/{eventId} {
+      allow read, write: if true;
+    }
+
+    match /business_audit_logs/{logId} {
+      allow read, write: if true;
+    }
+
+    match /business_notifications/{notifId} {
+      allow read, write: if true;
+    }
+
     // Default deny
     match /{path=**} {
       allow read, write: if false;

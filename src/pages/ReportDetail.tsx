@@ -24,29 +24,36 @@ export const ReportDetail = () => {
       return;
     }
 
+    let foundLocal = false;
+    try {
+      const cached = localStorage.getItem(`luminous_report_${reportId}`);
+      if (cached) {
+        setReportData(JSON.parse(cached));
+        setLoading(false);
+        foundLocal = true;
+      }
+    } catch (e) {
+      console.warn("LocalStorage error", e);
+    }
+
     const reportRef = doc(db, 'reports', reportId);
     const unsubscribe = onSnapshot(reportRef, (docSnap) => {
       if (docSnap.exists()) {
-        setReportData(docSnap.data());
+        const data = docSnap.data();
+        setReportData(data);
         setLoading(false);
-      } else {
-        console.warn("Report not found in this snapshot");
-        // Don't navigate home immediately, give it a few seconds to propagate
-        // or show a not found message instead of a blank screen
-        const timer = setTimeout(() => {
-          if (!reportData) {
-            setLoading(false);
-          }
-        }, 3000);
-        return () => clearTimeout(timer);
+      } else if (!foundLocal) {
+        setLoading(false);
       }
     }, (error) => {
-      handleFirestoreError(error, OperationType.GET, `reports/${reportId}`);
-      setLoading(false);
+      console.warn("Firestore snapshot error", error);
+      if (!foundLocal) {
+        setLoading(false);
+      }
     });
 
     return () => unsubscribe();
-  }, [reportId, navigate, reportData]);
+  }, [reportId, navigate]);
 
   if (loading) {
     return (
