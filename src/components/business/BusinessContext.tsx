@@ -3,8 +3,8 @@
 // Persisted Session Management for Super Admin & Business Tenants
 // ============================================================
 
-import React, { createContext, useContext, useEffect, useState } from 'react';
-import { onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
+import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
+import { onAuthStateChanged, setPersistence, browserLocalPersistence, User as FirebaseUser } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import { fetchCurrentBusinessProfile, loginBusinessUser, loginSuperAdminGoogle, logoutBusinessUser, SUPER_ADMIN_EMAIL } from '@/lib/business/businessAuth';
 import { getBusiness, listBusinesses } from '@/lib/business/businessDb';
@@ -31,6 +31,30 @@ const BusinessContext = createContext<BusinessContextType | undefined>(undefined
 const SESSION_KEY = 'luminous_active_session';
 const ACTIVE_BIZ_KEY = 'luminous_selected_biz_id';
 
+// Persist session to both storages so it survives browser tab close/restart
+function writeSession(data: object) {
+  const str = JSON.stringify(data);
+  try { sessionStorage.setItem(SESSION_KEY, str); } catch (_) {}
+  try { localStorage.setItem(SESSION_KEY, str); } catch (_) {}
+}
+
+function readSession(): any | null {
+  try {
+    const ss = sessionStorage.getItem(SESSION_KEY);
+    if (ss) return JSON.parse(ss);
+  } catch (_) {}
+  try {
+    const ls = localStorage.getItem(SESSION_KEY);
+    if (ls) return JSON.parse(ls);
+  } catch (_) {}
+  return null;
+}
+
+function clearSessionStorage() {
+  try { sessionStorage.removeItem(SESSION_KEY); } catch (_) {}
+  try { localStorage.removeItem(SESSION_KEY); } catch (_) {}
+}
+
 export const BusinessProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [firebaseUser, setFirebaseUser] = useState<FirebaseUser | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
@@ -39,6 +63,9 @@ export const BusinessProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const [businessUser, setBusinessUser] = useState<BusinessUser | null>(null);
   const [business, setBusiness] = useState<Business | null>(null);
   const [businesses, setBusinesses] = useState<Business[]>([]);
+
+  // Flag to prevent onAuthStateChanged from overwriting state during an active login() call
+  const loginInProgress = useRef(false);
 
   // Load all available businesses for switching
   const loadAllBusinesses = async (): Promise<Business[]> => {
@@ -56,14 +83,35 @@ export const BusinessProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     const all = await loadAllBusinesses();
     if (all.length === 0) return currentBiz;
 
-    const savedBizId = targetBizId || localStorage.getItem(ACTIVE_BIZ_KEY) || sessionStorage.getItem(ACTIVE_BIZ_KEY);
-    if (savedBizId) {
-      const match = all.find(b => b.id === savedBizId || b.slug === savedBizId);
+    // Priority 1: Match by explicit targetBizId (id or slug)
+    if (targetBizId) {
+      const match = all.find(b =>
+        b.id === targetBizId ||
+        b.slug === targetBizId ||
+        (b as any).businessId === targetBizId
+      );
       if (match) return match;
     }
 
-    if (currentBiz && currentBiz.slug) {
-      const match = all.find(b => b.id === currentBiz.id || b.slug === currentBiz.slug);
+    // Priority 2: Match by saved preference in storage
+    const savedBizId =
+      localStorage.getItem(ACTIVE_BIZ_KEY) ||
+      sessionStorage.getItem(ACTIVE_BIZ_KEY);
+    if (savedBizId) {
+      const match = all.find(b =>
+        b.id === savedBizId ||
+        b.slug === savedBizId ||
+        (b as any).businessId === savedBizId
+      );
+      if (match) return match;
+    }
+
+    // Priority 3: Match by currentBiz id or slug
+    if (currentBiz && (currentBiz.id || currentBiz.slug)) {
+      const match = all.find(b =>
+        b.id === currentBiz.id ||
+        b.slug === currentBiz.slug
+      );
       if (match) return match;
     }
 
@@ -83,22 +131,22 @@ export const BusinessProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   const restoreSession = async () => {
     try {
-      const raw = sessionStorage.getItem(SESSION_KEY);
-      if (raw) {
-        const sess = JSON.parse(raw);
-        if (sess.role) {
-          setRole(sess.role);
-          setSuperAdmin(sess.superAdmin || null);
-          setBusinessUser(sess.businessUser || null);
-          
-          const targetId = sess.businessUser?.businessId || sess.business?.id;
-          const biz = await ensureActiveBusiness(sess.business || null, targetId);
-          setBusiness(biz);
-          return true;
-        }
+      const sess = readSession();
+      if (sess?.role) {
+        setRole(sess.role);
+        setSuperAdmin(sess.superAdmin || null);
+        setBusinessUser(sess.businessUser || null);
+        
+        const targetId =
+          sess.businessUser?.businessId ||
+          sess.business?.id ||
+          sess.business?.slug;
+        const biz = await ensureActiveBusiness(sess.business || null, targetId);
+        setBusiness(biz);
+        return true;
       }
     } catch (e) {
-      console.warn("Failed restoring session:", e);
+      console.warn('Failed restoring session:', e);
     }
     const fallbackBiz = await ensureActiveBusiness(null);
     setBusiness(fallbackBiz);
@@ -111,7 +159,9 @@ export const BusinessProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     bu: BusinessUser | null,
     biz: Business | null
   ) => {
-    const activeBiz = await ensureActiveBusiness(biz, bu?.businessId);
+    // For business users, resolve their specific business by businessId
+    const targetId = bu?.businessId || biz?.id || biz?.slug;
+    const activeBiz = await ensureActiveBusiness(biz, targetId);
     if (activeBiz?.id) {
       localStorage.setItem(ACTIVE_BIZ_KEY, activeBiz.id);
       sessionStorage.setItem(ACTIVE_BIZ_KEY, activeBiz.id);
@@ -120,11 +170,8 @@ export const BusinessProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     setSuperAdmin(sa);
     setBusinessUser(bu);
     setBusiness(activeBiz);
-    try {
-      sessionStorage.setItem(SESSION_KEY, JSON.stringify({ role: r, superAdmin: sa, businessUser: bu, business: activeBiz }));
-    } catch (e) {
-      console.warn("Failed saving session:", e);
-    }
+    // Persist to both session and local storage for durability
+    writeSession({ role: r, superAdmin: sa, businessUser: bu, business: activeBiz });
   };
 
   const clearSession = () => {
@@ -132,16 +179,22 @@ export const BusinessProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     setSuperAdmin(null);
     setBusinessUser(null);
     setBusiness(null);
-    try {
-      sessionStorage.removeItem(SESSION_KEY);
-    } catch (e) {}
+    clearSessionStorage();
+    try { localStorage.removeItem(ACTIVE_BIZ_KEY); } catch (_) {}
+    try { sessionStorage.removeItem(ACTIVE_BIZ_KEY); } catch (_) {}
   };
 
   const loadUserData = async (u: FirebaseUser | null) => {
+    // Don't overwrite state if login() is actively running — it handles its own session save
+    if (loginInProgress.current) return;
+
     setLoading(true);
     if (!u || !u.email) {
+      // Firebase user is null — could be a transient token refresh.
+      // Only clear session if there is genuinely no saved session to restore.
       const restored = await restoreSession();
       if (!restored) {
+        // No active session at all — safe to clear
         clearSession();
       }
       setLoading(false);
@@ -168,6 +221,9 @@ export const BusinessProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   };
 
   useEffect(() => {
+    // Set Firebase Auth persistence to localStorage so sessions survive page reloads
+    setPersistence(auth, browserLocalPersistence).catch(console.warn);
+
     restoreSession();
     const unsubscribe = onAuthStateChanged(auth, (u) => {
       loadUserData(u);
@@ -176,6 +232,7 @@ export const BusinessProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   }, []);
 
   const login = async (email: string, pass: string) => {
+    loginInProgress.current = true;
     setLoading(true);
     try {
       const res = await loginBusinessUser(email, pass);
@@ -188,16 +245,20 @@ export const BusinessProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       return res;
     } finally {
       setLoading(false);
+      // Delay releasing the flag so onAuthStateChanged (which fires after signIn) doesn't race
+      setTimeout(() => { loginInProgress.current = false; }, 2000);
     }
   };
 
   const loginGoogle = async () => {
+    loginInProgress.current = true;
     setLoading(true);
     try {
       const sa = await loginSuperAdminGoogle();
       await saveSession('super_admin', sa, null, null);
     } finally {
       setLoading(false);
+      setTimeout(() => { loginInProgress.current = false; }, 2000);
     }
   };
 

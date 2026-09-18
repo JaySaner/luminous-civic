@@ -1,15 +1,16 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useBusinessContext } from '@/components/business/BusinessContext';
-import { Building2, Shield, Lock, Mail, ArrowRight, Sparkles, Loader2, Globe, KeyRound, UserCheck } from 'lucide-react';
+import { Building2, Shield, Lock, Mail, ArrowRight, Sparkles, Loader2, Globe, Eye, EyeOff } from 'lucide-react';
 
 export const BusinessLogin: React.FC = () => {
   const navigate = useNavigate();
-  const { login, loginGoogle, loginDemoAdmin, loginDemoBusiness } = useBusinessContext();
+  const { login, loginGoogle } = useBusinessContext();
 
   const [activeTab, setActiveTab] = useState<'business' | 'super_admin'>('business');
-  const [email, setEmail] = useState('admin@business.com');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [error, setError] = useState('');
@@ -17,28 +18,29 @@ export const BusinessLogin: React.FC = () => {
   const handleTabChange = (tab: 'business' | 'super_admin') => {
     setActiveTab(tab);
     setError('');
-    if (tab === 'super_admin') {
-      setEmail('jaysaner2006@gmail.com');
-    } else {
-      setEmail('admin@business.com');
-    }
+    setEmail('');
+    setPassword('');
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!email.trim() || !password) {
+      setError('Please enter both email and password.');
+      return;
+    }
     setError('');
     setLoading(true);
 
     try {
       const res = await login(email.trim(), password);
-      if (res?.role === 'super_admin' || email.trim().toLowerCase() === 'jaysaner2006@gmail.com') {
+      if (res?.role === 'super_admin') {
         navigate('/super-admin/dashboard');
       } else {
         navigate('/business/dashboard');
       }
     } catch (err: any) {
-      console.error("Login failed:", err);
-      setError(err.message || 'Invalid credentials. You can also use 1-Click Access below.');
+      console.error('Login failed:', err);
+      setError(err.message || 'Invalid email or password. Please check your credentials.');
     } finally {
       setLoading(false);
     }
@@ -51,21 +53,11 @@ export const BusinessLogin: React.FC = () => {
       await loginGoogle();
       navigate('/super-admin/dashboard');
     } catch (err: any) {
-      console.error("Google sign-in error:", err);
-      setError(err.message || 'Google sign-in failed. Try Quick Access mode below.');
+      console.error('Google sign-in error:', err);
+      setError(err.message || 'Google sign-in failed. Please try again.');
     } finally {
       setGoogleLoading(false);
     }
-  };
-
-  const handleQuickBusinessAccess = async () => {
-    loginDemoBusiness();
-    navigate('/business/dashboard');
-  };
-
-  const handleQuickSuperAdminAccess = () => {
-    loginDemoAdmin();
-    navigate('/super-admin/dashboard');
   };
 
   return (
@@ -130,6 +122,18 @@ export const BusinessLogin: React.FC = () => {
             </div>
           )}
 
+          {activeTab === 'business' && (
+            <div className="p-3 rounded-xl bg-blue-500/5 border border-blue-500/20 text-blue-300 text-xs">
+              <strong>Business Admin Login:</strong> Use the email and password created for your business by the platform administrator.
+            </div>
+          )}
+
+          {activeTab === 'super_admin' && (
+            <div className="p-3 rounded-xl bg-cyan-500/5 border border-cyan-500/20 text-cyan-300 text-xs">
+              <strong>Super Admin Login:</strong> Use your registered super admin email and password.
+            </div>
+          )}
+
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">
@@ -139,10 +143,12 @@ export const BusinessLogin: React.FC = () => {
                 <Mail className="w-4 h-4 absolute left-3.5 top-3.5 text-slate-500" />
                 <input
                   type="email"
-                  placeholder={activeTab === 'business' ? 'admin@business.com' : 'jaysaner2006@gmail.com'}
+                  id="login-email"
+                  placeholder={activeTab === 'business' ? 'admin@yourbusiness.com' : 'superadmin@platform.com'}
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
+                  autoComplete="username"
                   className="w-full pl-10 pr-4 py-3 rounded-xl bg-slate-950 border border-slate-800 text-white text-sm focus:outline-none focus:border-blue-500 transition"
                 />
               </div>
@@ -155,18 +161,29 @@ export const BusinessLogin: React.FC = () => {
               <div className="relative">
                 <Lock className="w-4 h-4 absolute left-3.5 top-3.5 text-slate-500" />
                 <input
-                  type="password"
-                  placeholder="Enter any password (e.g. Admin@123)"
+                  type={showPassword ? 'text' : 'password'}
+                  id="login-password"
+                  placeholder="Enter your password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
-                  className="w-full pl-10 pr-4 py-3 rounded-xl bg-slate-950 border border-slate-800 text-white text-sm focus:outline-none focus:border-blue-500 transition"
+                  autoComplete="current-password"
+                  className="w-full pl-10 pr-11 py-3 rounded-xl bg-slate-950 border border-slate-800 text-white text-sm focus:outline-none focus:border-blue-500 transition"
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(v => !v)}
+                  className="absolute right-3.5 top-3.5 text-slate-500 hover:text-slate-300 transition"
+                  tabIndex={-1}
+                >
+                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
               </div>
             </div>
 
             <button
               type="submit"
+              id="login-submit-btn"
               disabled={loading}
               className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 text-white font-bold text-sm shadow-xl shadow-blue-950/60 transition active:scale-95 disabled:opacity-50"
             >
@@ -182,44 +199,25 @@ export const BusinessLogin: React.FC = () => {
             </button>
           </form>
 
-          {/* Divider */}
-          <div className="relative flex items-center justify-center my-2">
-            <div className="border-t border-slate-800 w-full" />
-            <span className="bg-slate-900 px-3 text-[10px] font-bold uppercase text-slate-500 absolute">1-CLICK ACCESS</span>
-          </div>
-
-          {/* Quick Access Buttons */}
-          <div className="space-y-3">
-            <button
-              type="button"
-              onClick={handleQuickBusinessAccess}
-              className="w-full py-3 rounded-xl bg-gradient-to-r from-blue-600/30 to-indigo-600/30 hover:from-blue-600/50 hover:to-indigo-600/50 border border-blue-500/40 text-blue-300 text-xs font-bold transition flex items-center justify-center gap-2 shadow-lg"
-            >
-              <Building2 className="w-4 h-4 text-blue-400" />
-              🏢 Enter Business Workspace Dashboard
-            </button>
-
-            <button
-              type="button"
-              onClick={handleQuickSuperAdminAccess}
-              className="w-full py-3 rounded-xl bg-gradient-to-r from-cyan-600/30 to-teal-600/30 hover:from-cyan-600/50 hover:to-teal-600/50 border border-cyan-500/40 text-cyan-300 text-xs font-bold transition flex items-center justify-center gap-2 shadow-lg"
-            >
-              <KeyRound className="w-4 h-4 text-cyan-400" />
-              👑 Enter Super Admin Control Panel
-            </button>
-
-            {activeTab === 'super_admin' && (
+          {/* Google Sign-In for Super Admin only */}
+          {activeTab === 'super_admin' && (
+            <>
+              <div className="relative flex items-center justify-center my-2">
+                <div className="border-t border-slate-800 w-full" />
+                <span className="bg-slate-900 px-3 text-[10px] font-bold uppercase text-slate-500 absolute">OR</span>
+              </div>
               <button
                 type="button"
+                id="google-login-btn"
                 onClick={handleGoogleLogin}
                 disabled={googleLoading}
                 className="w-full py-3 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-white text-xs font-bold transition flex items-center justify-center gap-2"
               >
                 {googleLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Shield className="w-4 h-4 text-cyan-400" />}
-                Sign In as Super Admin with Google
+                Sign In with Google (Super Admin)
               </button>
-            )}
-          </div>
+            </>
+          )}
         </div>
       </div>
     </div>

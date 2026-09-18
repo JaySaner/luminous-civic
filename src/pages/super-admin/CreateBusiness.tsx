@@ -74,6 +74,13 @@ export const CreateBusiness: React.FC = () => {
         slaConfig: DEFAULT_SLA_CONFIG
       });
 
+      // Ensure businessId field matches id for cross-reference lookups
+      if (biz.id && !(biz as any).businessId) {
+        await import('@/lib/business/businessDb').then(({ updateBusiness }) =>
+          updateBusiness(biz.id, { ...(biz as any), businessId: biz.id })
+        );
+      }
+
       // 2. Create Initial Default Departments & Locations in sub-collections
       await createDepartment({ businessId: biz.id, name: 'Customer Service', code: 'CS' });
       await createDepartment({ businessId: biz.id, name: 'Maintenance & Repairs', code: 'MAINT' });

@@ -4,38 +4,46 @@
 
 // --- Business Entity ---
 
-export type BusinessStatus = 'active' | 'suspended' | 'pending';
-export type BusinessPlan = 'basic' | 'business' | 'pro' | 'enterprise';
+export type BusinessStatus = 'active' | 'inactive' | 'suspended' | 'pending';
+export type BusinessPlan = 'basic' | 'business' | 'pro' | 'enterprise' | 'Starter' | 'Pro' | 'Enterprise';
 
 export interface Business {
-  id: string; // Firestore doc ID
-  businessId: string; // Human-readable ID e.g. BUS-00124
+  id: string;                   // Firestore doc ID
+  businessId?: string;          // Alias of id for cross-ref lookups
   name: string;
-  slug: string; // URL-safe slug for public portal
-  industry: string;
-  description: string;
+  slug: string;                 // URL-safe slug for public portal
+  // Industry field (prefer industryType for new records)
+  industry?: string;
+  industryType?: string;        // Used by CreateBusiness & BusinessManagement
+  description?: string;
   registrationNumber?: string;
   website?: string;
   phone?: string;
   email?: string;
-  address: string;
-  city: string;
-  state: string;
-  country: string;
+  address?: string;
+  city?: string;
+  state?: string;
+  country?: string;
   pinCode?: string;
-  logoBase64?: string; // Base64 logo for MVP (no Firebase Storage needed)
+  logoBase64?: string;
+  logoUrl?: string;             // Base64 or URL logo
+  branding?: Record<string, any>; // Custom branding settings
   status: BusinessStatus;
-  plan: BusinessPlan;
-  ownerId?: string; // Firebase Auth UID of owner (set after owner claims account)
-  ownerEmail: string;
-  ownerName: string;
+  // Plan field (prefer subscriptionPlan for new records)
+  plan?: BusinessPlan;
+  subscriptionPlan?: 'Starter' | 'Pro' | 'Enterprise'; // Used by CreateBusiness
+  ownerId?: string;
+  ownerEmail?: string;
+  ownerName?: string;
   ownerPhone?: string;
-  portalConfig: PortalConfig;
-  slaConfig: SLAConfig;
+  portalConfig?: PortalConfig;
+  slaConfig?: SLAConfig;
+  departments?: { id: string; name: string; code?: string }[];
+  locations?: { id: string; name: string; address?: string }[];
   operatingHours?: string;
   timezone?: string;
   expectedUsers?: number;
-  createdAt: string; // ISO date
+  createdAt: string;
   updatedAt: string;
 }
 
@@ -45,19 +53,26 @@ export interface PortalConfig {
   primaryColor?: string;
   welcomeMessage?: string;
   reportingInstructions?: string;
-  anonymousReporting: boolean;
+  anonymousReporting?: boolean;
   contactEmail?: string;
   contactPhone?: string;
 }
 
 // --- Business Users ---
 
-export type BusinessUserRole = 'business_owner' | 'business_manager' | 'business_employee';
+export type BusinessUserRole =
+  | 'admin'
+  | 'manager'
+  | 'staff'
+  | 'business_owner'
+  | 'business_manager'
+  | 'business_employee';
+
 export type BusinessUserStatus = 'active' | 'inactive' | 'pending_setup';
 
 export interface BusinessUser {
-  id: string;
-  uid: string; // Firebase Auth UID
+  id?: string;
+  uid: string;                  // Firebase Auth UID
   businessId: string;
   email: string;
   name: string;
@@ -66,8 +81,21 @@ export interface BusinessUser {
   departmentId?: string;
   departmentName?: string;
   status: BusinessUserStatus;
+  passwordHash?: string;        // Stored for offline/fallback auth
   createdAt: string;
   updatedAt?: string;
+  lastLoginAt?: string;
+}
+
+// --- Super Admin ---
+
+export interface SuperAdminUser {
+  uid: string;
+  email: string;
+  name: string;
+  role: 'super_admin';
+  createdAt: string;
+  lastLoginAt?: string;
 }
 
 // --- Business Locations ---
@@ -78,24 +106,46 @@ export interface BusinessLocation {
   name: string;
   address?: string;
   city?: string;
-  isPrimary: boolean;
+  isPrimary?: boolean;
   qrCodeData?: string;
-  createdAt: string;
+  createdAt?: string;
 }
 
 // --- Departments ---
 
-export interface Department {
+export interface BusinessDepartment {
   id: string;
   businessId: string;
   name: string;
+  code?: string;
   description?: string;
-  color: string; // hex color for display
-  icon?: string; // lucide icon name
+  color?: string;
+  icon?: string;
+  email?: string;
   headUserId?: string;
   headUserName?: string;
-  userCount: number;
-  createdAt: string;
+  userCount?: number;
+  createdAt?: string;
+}
+
+// Keep old alias
+export type Department = BusinessDepartment;
+
+// --- Business Employees ---
+
+export interface BusinessEmployee {
+  id: string;
+  uid?: string;
+  businessId: string;
+  name: string;
+  email: string;
+  phone?: string;
+  role?: string;
+  departmentId?: string;
+  departmentName?: string;
+  designation?: string;
+  status?: 'active' | 'inactive';
+  createdAt?: string;
 }
 
 // --- Custom Forms ---
@@ -104,6 +154,7 @@ export type FormFieldType =
   | 'text'
   | 'textarea'
   | 'number'
+  | 'select'
   | 'dropdown'
   | 'radio'
   | 'checkbox'
@@ -111,6 +162,7 @@ export type FormFieldType =
   | 'datetime'
   | 'location'
   | 'image_upload'
+  | 'file'
   | 'video_upload'
   | 'document_upload'
   | 'phone'
@@ -119,36 +171,43 @@ export type FormFieldType =
   | 'section'
   | 'instructions';
 
-export interface CustomFormField {
+export interface FormField {
   id: string;
   type: FormFieldType;
   label: string;
   placeholder?: string;
   required: boolean;
-  options?: string[]; // For dropdown, radio, checkbox
+  options?: string[];
   helpText?: string;
-  order: number;
+  order?: number;
   maxLength?: number;
   minValue?: number;
   maxValue?: number;
-  maxFileSize?: number; // in MB
+  maxFileSize?: number;
   acceptedFileTypes?: string[];
 }
 
+// Alias
+export type CustomFormField = FormField;
+
 export interface CustomForm {
-  id: string; // doc ID = businessId
+  id: string;
   businessId: string;
-  fields: CustomFormField[];
-  version: number;
-  published: boolean;
-  updatedAt: string;
-  createdAt: string;
+  title?: string;
+  description?: string;
+  fields: FormField[];
+  version?: number;
+  published?: boolean;
+  isPublished?: boolean;      // alias for published
+  updatedAt?: string;
+  createdAt?: string;
 }
 
 // --- Business Issues ---
 
-export type IssuePriority = 'critical' | 'high' | 'medium' | 'low';
+export type IssuePriority = 'Critical' | 'High' | 'Medium' | 'Low' | 'critical' | 'high' | 'medium' | 'low';
 export type IssueStatus =
+  | 'new'
   | 'submitted'
   | 'ai_processing'
   | 'triaged'
@@ -162,18 +221,33 @@ export type IssueStatus =
   | 'escalated';
 
 export interface IssueAttachment {
+  id?: string;
+  type?: 'image' | 'video' | 'document';
+  name?: string;
+  data?: string;
+  mimeType?: string;
+  size?: number;
+}
+
+export interface IssueTimelineEvent {
   id: string;
-  type: 'image' | 'video' | 'document';
-  name: string;
-  data: string; // Base64 data for MVP
-  mimeType: string;
-  size: number; // bytes
+  issueId: string;
+  action: string;
+  actorName: string;
+  actorRole: string;
+  statusTo?: string;
+  statusFrom?: string;
+  notes?: string;
+  timestamp: string;
 }
 
 export interface BusinessIssue {
-  id: string; // Firestore doc ID
+  id: string;
   businessId: string;
-  trackingId: string; // e.g. LC-10482
+  // tracking fields (aliases)
+  trackingId?: string;          // Old format: LC-10482
+  trackingNumber?: string;      // New format: LUM-26-XXXXX
+  publicReportId?: string;
   title: string;
   description: string;
   category?: string;
@@ -182,47 +256,79 @@ export interface BusinessIssue {
   status: IssueStatus;
   locationId?: string;
   locationName?: string;
+  // department (prefer assignedDepartmentId for new records)
   departmentId?: string;
   departmentName?: string;
-  assignedTo?: string; // UID
+  assignedDepartmentId?: string;
+  // assignment
+  assignedTo?: string;
   assignedToName?: string;
+  assignedEmployeeId?: string;
+  assignedEmployeeName?: string;
   reporterName?: string;
   reporterEmail?: string;
   reporterPhone?: string;
-  attachments: IssueAttachment[];
-  formData?: Record<string, any>; // Custom form field values
-  formVersion?: number; // Form version at time of submission
-  slaDeadline?: string; // ISO date
+  images?: string[];
+  attachments?: (IssueAttachment | string)[];
+  formData?: Record<string, any>;
+  fieldValues?: Record<string, any>;
+  formVersion?: number;
+  slaDeadline?: string;
   slaStatus?: 'on_track' | 'warning' | 'breached';
+  slaEscalated?: boolean;
+  aiAnalysis?: any;
   aiAnalysisId?: string;
-  aiStatus: 'pending' | 'completed' | 'failed' | 'skipped';
+  aiStatus?: 'pending' | 'completed' | 'failed' | 'skipped';
+  history?: any[];
   createdAt: string;
   updatedAt: string;
   resolvedAt?: string;
   closedAt?: string;
 }
 
-// --- AI Analysis ---
+// --- Public Reports ---
+
+export interface PublicReport {
+  id: string;
+  trackingNumber: string;
+  businessId: string;
+  formId: string;
+  fieldValues: Record<string, any>;
+  reporter: {
+    name?: string;
+    email?: string;
+    phone?: string;
+    anonymous: boolean;
+  };
+  createdAt: string;
+  status: string;
+}
+
+// AI Analysis Aliases
+export type BusinessAIAnalysis = AIBusinessAnalysis;
 
 export interface AIBusinessAnalysis {
-  id: string;
-  issueId: string;
-  businessId: string;
-  issueType: string;
-  category: string;
+  id?: string;
+  issueId?: string;
+  businessId?: string;
+  issueType?: string;
+  category?: string;
   subcategory?: string;
   priority: IssuePriority;
-  confidence: number; // 0–1
+  confidence?: number;
   suggestedDepartment?: string;
   risk?: string;
-  suggestedActions: string[];
-  potentialDuplicate: boolean;
+  suggestedActions?: string[];
+  potentialDuplicate?: boolean;
   duplicateIssueId?: string;
   similarityScore?: number;
   summary: string;
-  status: 'pending' | 'completed' | 'failed';
+  suggestedAction?: string;
+  estimatedHoursToResolve?: number;
+  tags?: string[];
+  status?: 'pending' | 'completed' | 'failed';
   analyzedAt?: string;
-  createdAt: string;
+  createdAt?: string;
 }
 
 // --- Issue Comments ---
@@ -237,43 +343,42 @@ export interface IssueComment {
   userName: string;
   content: string;
   type: CommentType;
-  isInternal: boolean; // Internal notes not visible to reporter
+  isInternal: boolean;
   createdAt: string;
 }
 
-// --- Issue Status History ---
+// --- Business Audit Logs ---
 
-export interface IssueStatusChange {
+export interface BusinessAuditLog {
   id: string;
-  issueId: string;
-  businessId: string;
-  fromStatus: IssueStatus | null;
-  toStatus: IssueStatus;
-  changedBy: string; // UID
-  changedByName: string;
-  reason?: string;
-  createdAt: string;
+  businessId?: string;
+  userId?: string;
+  userName?: string;
+  action: string;
+  entity?: string;
+  entityId?: string;
+  details?: string;
+  timestamp: string;
 }
 
-// --- Issue Feedback ---
+// Keep alias
+export type AuditLog = BusinessAuditLog;
 
-export interface IssueFeedback {
-  id: string;
-  issueId: string;
-  businessId: string;
-  resolved: boolean;
-  rating?: number; // 1–5
-  comment?: string;
-  createdAt: string;
-}
-
-// --- SLA ---
+// --- SLA Config ---
 
 export interface SLAConfig {
-  critical: number; // hours
-  high: number;
-  medium: number;
-  low: number;
+  // New compact fields
+  critical?: number;
+  high?: number;
+  medium?: number;
+  low?: number;
+  // Legacy verbose fields (used in older DB records)
+  resolutionHoursCritical?: number;
+  resolutionHoursHigh?: number;
+  resolutionHoursMedium?: number;
+  resolutionHoursLow?: number;
+  escalationEmail?: string;
+  autoEscalate?: boolean;
 }
 
 export const DEFAULT_SLA_CONFIG: SLAConfig = {
@@ -281,22 +386,11 @@ export const DEFAULT_SLA_CONFIG: SLAConfig = {
   high: 4,
   medium: 12,
   low: 48,
+  resolutionHoursCritical: 12,
+  resolutionHoursHigh: 24,
+  resolutionHoursMedium: 48,
+  resolutionHoursLow: 72,
 };
-
-// --- Escalation ---
-
-export interface EscalationRecord {
-  id: string;
-  issueId: string;
-  businessId: string;
-  fromUserId?: string;
-  fromUserName?: string;
-  toUserId?: string;
-  toUserName?: string;
-  level: number; // 1 = employee, 2 = manager, 3 = admin, 4 = owner
-  reason: string;
-  createdAt: string;
-}
 
 // --- Notifications ---
 
@@ -315,26 +409,12 @@ export type NotificationType =
 export interface BusinessNotification {
   id: string;
   businessId: string;
-  userId: string; // recipient UID
+  userId: string;
   type: NotificationType;
   title: string;
   message: string;
   issueId?: string;
   read: boolean;
-  createdAt: string;
-}
-
-// --- Audit Logs ---
-
-export interface AuditLog {
-  id: string;
-  businessId?: string; // null for platform-level actions
-  userId: string;
-  userName: string;
-  action: string;
-  entity: string;
-  entityId?: string;
-  details?: string;
   createdAt: string;
 }
 
@@ -376,8 +456,6 @@ export const INDUSTRY_TYPES = [
   'Other',
 ] as const;
 
-// --- Default Categories ---
-
 export const DEFAULT_ISSUE_CATEGORIES = [
   'Maintenance',
   'Electrical',
@@ -392,8 +470,6 @@ export const DEFAULT_ISSUE_CATEGORIES = [
   'Other',
 ] as const;
 
-// --- Default Departments ---
-
 export const DEFAULT_DEPARTMENTS = [
   { name: 'Maintenance', color: '#2563eb', icon: 'wrench' },
   { name: 'Electrical', color: '#f59e0b', icon: 'zap' },
@@ -401,8 +477,6 @@ export const DEFAULT_DEPARTMENTS = [
   { name: 'IT & Network', color: '#8b5cf6', icon: 'monitor' },
   { name: 'Administration', color: '#06b6d4', icon: 'building2' },
 ] as const;
-
-// --- Department Color Palette ---
 
 export const DEPARTMENT_COLORS = [
   '#2563eb', '#ef4444', '#f59e0b', '#10b981', '#8b5cf6',
@@ -419,4 +493,3 @@ export const INDUSTRY_PRESETS = [
   { name: 'Manufacturing & Industrial', description: 'Factories, warehouses & industrial parks' },
   { name: 'IT & Technology Parks', description: 'Tech hubs & corporate office campuses' }
 ];
-

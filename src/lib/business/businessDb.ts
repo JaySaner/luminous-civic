@@ -21,6 +21,7 @@ import type {
   BusinessDepartment, 
   BusinessLocation, 
   BusinessEmployee, 
+  BusinessUser,
   CustomForm, 
   PublicReport, 
   BusinessIssue, 
@@ -62,7 +63,7 @@ export function sanitizeFirestoreData<T extends Record<string, any>>(obj: T): T 
 
 // --- Local Storage Cache Helpers ---
 
-function getLocalCache<T>(key: string): T[] {
+export function getLocalCache<T>(key: string): T[] {
   try {
     const raw = localStorage.getItem('luminous_cache_' + key);
     return raw ? JSON.parse(raw) : [];
@@ -71,47 +72,93 @@ function getLocalCache<T>(key: string): T[] {
   }
 }
 
-function saveLocalCache<T extends { id?: string }>(key: string, item: T): void {
-  try {
-    if (!item.id) return;
-    const list = getLocalCache<any>(key);
-    const existingIdx = list.findIndex((x: any) => x.id === item.id);
-    if (existingIdx >= 0) {
-      list[existingIdx] = { ...list[existingIdx], ...item };
+/**
+ * Strip large base64 encoded strings from an object recursively.
+ * Used as a fallback when localStorage quota is exceeded.
+ */
+function stripBase64Fields(obj: Record<string, any>): Record<string, any> {
+  const clean: Record<string, any> = {};
+  for (const [key, val] of Object.entries(obj)) {
+    if (typeof val === 'string' && val.startsWith('data:') && val.length > 500) {
+      clean[key] = '[image-stripped-for-storage]';
+    } else if (val && typeof val === 'object' && !Array.isArray(val)) {
+      clean[key] = stripBase64Fields(val);
+    } else if (Array.isArray(val)) {
+      clean[key] = val.map((v: any) =>
+        typeof v === 'string' && v.startsWith('data:') && v.length > 500
+          ? '[image-stripped-for-storage]'
+          : v
+      );
     } else {
-      list.push(item);
+      clean[key] = val;
     }
-    localStorage.setItem('luminous_cache_' + key, JSON.stringify(list));
-  } catch (e) {
-    console.warn("Failed saving to local storage cache", e);
   }
+  return clean;
+}
+
+function saveLocalCache<T extends { id?: string }>(key: string, item: T): void {
+  if (!item.id) return;
+  const list = getLocalCache<any>(key);
+  const existingIdx = list.findIndex((x: any) => x.id === item.id);
+  if (existingIdx >= 0) {
+    list[existingIdx] = { ...list[existingIdx], ...item };
+  } else {
+    list.push(item);
+  }
+  const cacheKey = 'luminous_cache_' + key;
+  try {
+    localStorage.setItem(cacheKey, JSON.stringify(list));
+  } catch (e: any) {
+    if (e?.name === 'QuotaExceededError' || e?.code === 22) {
+      // Strip base64 images and retry
+      try {
+        const stripped = list.map((entry: any) => stripBase64Fields(entry));
+        localStorage.setItem(cacheKey, JSON.stringify(stripped));
+        console.warn(`localStorage quota exceeded for ${key}; saved without image data.`);
+      } catch (e2) {
+        console.warn('Failed saving to local storage cache even after stripping images:', e2);
+      }
+    } else {
+      console.warn('Failed saving to local storage cache:', e);
+    }
+  }
+}
+
+/**
+ * Lookup business user by email in the local cache.
+ * Used for offline/fallback credential verification.
+ */
+export async function getLocalBusinessUserByEmail(email: string): Promise<BusinessUser | null> {
+  const cleanEmail = email.trim().toLowerCase();
+  const cached = getLocalCache<BusinessUser>('business_users');
+  const found = cached.find((u: any) =>
+    (u.email || '').toLowerCase() === cleanEmail
+  );
+  return found || null;
 }
 
 export async function safeSetDoc<T extends Record<string, any>>(ref: any, data: T, collectionKey: string): Promise<void> {
   const sanitized = sanitizeFirestoreData(data);
-  saveLocalCache(collectionKey, sanitized);
 
+  // Ensure we have an authenticated user before writing to Firestore.
+  // Prefer anonymous sign-in only when there is truly no current user.
   if (!auth.currentUser) {
     try {
       await signInAnonymously(auth);
     } catch (e) {
-      // ignore
+      // ignore — we'll still try the write below
     }
   }
 
-  try {
-    await setDoc(ref, sanitized, { merge: true });
-  } catch (err: any) {
-    console.warn(`Firestore setDoc to ${collectionKey} permission/data warning, using local cache:`, err.message);
-  }
+  // PRIMARY: Write to Firestore (cloud-persisted, cross-device)
+  await setDoc(ref, sanitized, { merge: true });
+
+  // SECONDARY: Mirror to localStorage as an offline/speed cache
+  saveLocalCache(collectionKey, sanitized);
 }
 
 export async function safeUpdateDoc<T extends Record<string, any>>(ref: any, id: string, updates: Partial<T>, collectionKey: string): Promise<void> {
   const sanitized = sanitizeFirestoreData(updates as Record<string, any>);
-  const cached = getLocalCache<any>(collectionKey).find(x => x.id === id);
-  if (cached) {
-    saveLocalCache(collectionKey, { ...cached, ...sanitized, id });
-  }
 
   if (!auth.currentUser) {
     try {
@@ -121,10 +168,13 @@ export async function safeUpdateDoc<T extends Record<string, any>>(ref: any, id:
     }
   }
 
-  try {
-    await updateDoc(ref, sanitized);
-  } catch (err: any) {
-    console.warn(`Firestore updateDoc to ${collectionKey}/${id} permission/data warning, using local cache:`, err.message);
+  // PRIMARY: Update in Firestore (cloud-persisted, cross-device)
+  await updateDoc(ref, sanitized);
+
+  // SECONDARY: Mirror update to localStorage cache
+  const cached = getLocalCache<any>(collectionKey).find(x => x.id === id);
+  if (cached) {
+    saveLocalCache(collectionKey, { ...cached, ...sanitized, id });
   }
 }
 
@@ -136,6 +186,8 @@ export async function createBusiness(data: Omit<Business, 'id' | 'createdAt' | '
   const business: Business = sanitizeFirestoreData({
     ...data,
     id: newRef.id,
+    // Store businessId as an alias for id to allow cross-reference lookups
+    businessId: newRef.id,
     createdAt: now,
     updatedAt: now
   });
@@ -347,6 +399,31 @@ export function generateTrackingNumber(): string {
   return `${prefix}-${year}-${randomStr}`;
 }
 
+/**
+ * Persist a lightweight tracking-number → issue-id lookup table in localStorage.
+ * This ensures tracking links work even when the large issues cache is evicted.
+ */
+function saveTrackingLookup(trackingNumber: string, issueId: string, businessId: string): void {
+  try {
+    const raw = localStorage.getItem('luminous_tracking_map') || '{}';
+    const map: Record<string, { issueId: string; businessId: string }> = JSON.parse(raw);
+    map[trackingNumber.toUpperCase()] = { issueId, businessId };
+    localStorage.setItem('luminous_tracking_map', JSON.stringify(map));
+  } catch (e) {
+    console.warn('Failed to save tracking lookup:', e);
+  }
+}
+
+function getTrackingLookup(trackingNumber: string): { issueId: string; businessId: string } | null {
+  try {
+    const raw = localStorage.getItem('luminous_tracking_map') || '{}';
+    const map: Record<string, { issueId: string; businessId: string }> = JSON.parse(raw);
+    return map[trackingNumber.toUpperCase()] || null;
+  } catch (e) {
+    return null;
+  }
+}
+
 export async function submitPublicReport(
   businessId: string, 
   formId: string, 
@@ -423,6 +500,9 @@ export async function submitPublicReport(
   });
   await safeSetDoc(issueRef, internalIssue, ISSUES_COL);
 
+  // Save lightweight tracking lookup for persistent tracking link resolution
+  saveTrackingLookup(trackingNumber, issueRef.id, businessId);
+
   await addTimelineEvent(issueRef.id, {
     issueId: issueRef.id,
     action: 'submitted',
@@ -437,6 +517,8 @@ export async function submitPublicReport(
 
 export async function getReportByTrackingNumber(trackingNumber: string): Promise<BusinessIssue | null> {
   const code = trackingNumber.trim().toUpperCase();
+
+  // 1. Try Firestore
   try {
     const q = query(collection(db, ISSUES_COL), where('trackingNumber', '==', code), limit(1));
     const snap = await getDocs(q);
@@ -445,8 +527,24 @@ export async function getReportByTrackingNumber(trackingNumber: string): Promise
     console.warn(`Firestore getReportByTrackingNumber ${code} failed, checking local cache...`);
   }
 
+  // 2. Try full issues cache
   const cached = getLocalCache<BusinessIssue>(ISSUES_COL).find(i => i.trackingNumber === code);
-  return cached || null;
+  if (cached) return cached;
+
+  // 3. Try lightweight tracking lookup → fetch full issue by id
+  const lookup = getTrackingLookup(code);
+  if (lookup?.issueId) {
+    // Try Firestore for the specific issue doc
+    try {
+      const snap = await getDoc(doc(db, ISSUES_COL, lookup.issueId));
+      if (snap.exists()) return snap.data() as BusinessIssue;
+    } catch (_) {}
+    // Try local cache by id
+    const byId = getLocalCache<BusinessIssue>(ISSUES_COL).find(i => i.id === lookup.issueId);
+    if (byId) return byId;
+  }
+
+  return null;
 }
 
 // --- ISSUE MANAGEMENT ---
@@ -471,13 +569,9 @@ export async function listBusinessIssues(
 
   let issues = Array.from(map.values());
 
-  // If businessId passed and matches exist, filter; otherwise return all issues
+  // Filter strictly by businessId to prevent cross-business data leakage
   if (businessId) {
-    const matched = issues.filter(i => 
-      i.businessId === businessId || 
-      i.businessId === 'aissms-coe' || 
-      !i.businessId
-    );
+    const matched = issues.filter(i => i.businessId === businessId || !i.businessId);
     if (matched.length > 0) {
       issues = matched;
     }

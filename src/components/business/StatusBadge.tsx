@@ -27,16 +27,19 @@ export const StatusBadge: React.FC<{ status: IssueStatus | BusinessStatus | stri
 };
 
 export const PriorityBadge: React.FC<{ priority: IssuePriority }> = ({ priority }) => {
-  const styles: Record<IssuePriority, string> = {
-    Low: 'bg-slate-500/10 text-slate-400 border-slate-500/30',
-    Medium: 'bg-blue-500/10 text-blue-400 border-blue-500/30',
-    High: 'bg-amber-500/10 text-amber-400 border-amber-500/30',
-    Critical: 'bg-rose-500/10 text-rose-400 border-rose-500/30 shadow-sm shadow-rose-900/30'
+  const p = (priority || '').toString().toLowerCase();
+  const styleMap: Record<string, string> = {
+    low: 'bg-slate-500/10 text-slate-400 border-slate-500/30',
+    medium: 'bg-blue-500/10 text-blue-400 border-blue-500/30',
+    high: 'bg-amber-500/10 text-amber-400 border-amber-500/30',
+    critical: 'bg-rose-500/10 text-rose-400 border-rose-500/30 shadow-sm shadow-rose-900/30'
   };
+  const style = styleMap[p] || 'bg-slate-500/10 text-slate-400 border-slate-500/30';
+  const label = (priority || '').toString().charAt(0).toUpperCase() + (priority || '').toString().slice(1).toLowerCase();
 
   return (
-    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-bold border ${styles[priority]}`}>
-      {priority}
+    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-bold border ${style}`}>
+      {label}
     </span>
   );
 };
