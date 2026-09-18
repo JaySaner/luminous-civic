@@ -6,10 +6,7 @@ import firebaseConfig from '@/firebase-applet-config.json';
 // Initialize Firebase SDK
 const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
-// Use the standard (default) Firestore database — NOT the AI Shared Quota named database
-// The AI Studio named database has write restrictions that block production writes.
-export const db = getFirestore(app);
-
+export const db = getFirestore(app, firebaseConfig.firestoreDatabaseId);
 export const googleProvider = new GoogleAuthProvider();
 
 // Operation types for error handling
