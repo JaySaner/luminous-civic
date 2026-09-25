@@ -14,7 +14,8 @@ import {
   Globe, 
   Menu, 
   X,
-  Sparkles
+  Sparkles,
+  Inbox
 } from 'lucide-react';
 
 export const SuperAdminLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -30,6 +31,7 @@ export const SuperAdminLayout: React.FC<{ children: React.ReactNode }> = ({ chil
 
   const navItems = [
     { label: 'Platform Dashboard', path: '/super-admin/dashboard', icon: LayoutDashboard },
+    { label: 'Enterprise Inquiries', path: '/super-admin/inquiries', icon: Inbox },
     { label: 'Businesses & Tenants', path: '/super-admin/businesses', icon: Building2 },
     { label: 'Onboard New Business', path: '/super-admin/businesses/new', icon: PlusCircle },
     { label: 'Platform Users', path: '/super-admin/users', icon: Users },

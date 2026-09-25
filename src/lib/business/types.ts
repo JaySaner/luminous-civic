@@ -87,7 +87,7 @@ export interface BusinessUser {
   lastLoginAt?: string;
 }
 
-// --- Super Admin ---
+// --- Super Admin & Inquiries ---
 
 export interface SuperAdminUser {
   uid: string;
@@ -96,6 +96,22 @@ export interface SuperAdminUser {
   role: 'super_admin';
   createdAt: string;
   lastLoginAt?: string;
+}
+
+export type InquiryStatus = 'new' | 'contacted' | 'converted';
+
+export interface BusinessInquiry {
+  id: string;
+  fullName: string;
+  workEmail: string;
+  companyName: string;
+  phone: string;
+  industry: string;
+  locationsCount?: string;
+  notes?: string;
+  status: InquiryStatus;
+  createdAt: string;
+  updatedAt?: string;
 }
 
 // --- Business Locations ---

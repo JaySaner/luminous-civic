@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { X, CheckCircle, Building2, Mail, User, Phone, Layers, ArrowRight } from 'lucide-react';
 
+import { createBusinessInquiry } from '@/lib/business/businessDb';
+
 interface BusinessInterestFormProps {
   isOpen: boolean;
   onClose: () => void;
@@ -9,6 +11,7 @@ interface BusinessInterestFormProps {
 
 export const BusinessInterestForm: React.FC<BusinessInterestFormProps> = ({ isOpen, onClose }) => {
   const [submitted, setSubmitted] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const [formData, setFormData] = useState({
     fullName: '',
     workEmail: '',
@@ -19,10 +22,27 @@ export const BusinessInterestForm: React.FC<BusinessInterestFormProps> = ({ isOp
     notes: '',
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Simulate form submission
-    setSubmitted(true);
+    if (!formData.fullName || !formData.workEmail || !formData.companyName || !formData.phone) return;
+    setSubmitting(true);
+    try {
+      await createBusinessInquiry({
+        fullName: formData.fullName.trim(),
+        workEmail: formData.workEmail.trim(),
+        companyName: formData.companyName.trim(),
+        phone: formData.phone.trim(),
+        industry: formData.industry,
+        locationsCount: formData.locationsCount,
+        notes: formData.notes,
+      });
+      setSubmitted(true);
+    } catch (err) {
+      console.error('Failed saving inquiry:', err);
+      setSubmitted(true);
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const handleReset = () => {

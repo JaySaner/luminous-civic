@@ -22,6 +22,7 @@ import { BusinessRoute } from './components/business/BusinessRoute';
 
 // Super Admin Pages
 import { SuperAdminDashboard } from './pages/super-admin/SuperAdminDashboard';
+import { PlatformInquiries } from './pages/super-admin/PlatformInquiries';
 import { BusinessManagement } from './pages/super-admin/BusinessManagement';
 import { CreateBusiness } from './pages/super-admin/CreateBusiness';
 import { BusinessDetails } from './pages/super-admin/BusinessDetails';
@@ -179,6 +180,7 @@ const AppContent: React.FC = () => {
 
             {/* Super Admin Routes */}
             <Route path="/super-admin/dashboard" element={<SuperAdminRoute><SuperAdminDashboard /></SuperAdminRoute>} />
+            <Route path="/super-admin/inquiries" element={<SuperAdminRoute><PlatformInquiries /></SuperAdminRoute>} />
             <Route path="/super-admin/businesses" element={<SuperAdminRoute><BusinessManagement /></SuperAdminRoute>} />
             <Route path="/super-admin/businesses/new" element={<SuperAdminRoute><CreateBusiness /></SuperAdminRoute>} />
             <Route path="/super-admin/businesses/:id" element={<SuperAdminRoute><BusinessDetails /></SuperAdminRoute>} />

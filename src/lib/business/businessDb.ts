@@ -27,6 +27,7 @@ import type {
   BusinessIssue, 
   IssueTimelineEvent,
   BusinessAuditLog,
+  BusinessInquiry,
   IssuePriority,
   IssueStatus
 } from './types';
@@ -42,6 +43,7 @@ const PUBLIC_REPORTS_COL = 'business_public_reports';
 const ISSUES_COL = 'business_issues';
 const TIMELINE_COL = 'business_issue_timeline';
 const AUDIT_COL = 'business_audit_logs';
+const INQUIRIES_COL = 'business_inquiries';
 
 /**
  * Strips out any properties with undefined values recursively because Firestore throws an error if any field is undefined.
@@ -731,4 +733,51 @@ export async function logBusinessActivity(log: Omit<BusinessAuditLog, 'id' | 'ti
     timestamp: new Date().toISOString()
   });
   await safeSetDoc(ref, fullLog, AUDIT_COL);
+}
+
+// --- ENTERPRISE INQUIRIES & LEAD MANAGEMENT ---
+
+export async function createBusinessInquiry(data: Omit<BusinessInquiry, 'id' | 'createdAt' | 'status'>): Promise<BusinessInquiry> {
+  const ref = doc(collection(db, INQUIRIES_COL));
+  const now = new Date().toISOString();
+  const inquiry: BusinessInquiry = sanitizeFirestoreData({
+    ...data,
+    id: ref.id,
+    status: 'new',
+    createdAt: now,
+    updatedAt: now
+  });
+  await safeSetDoc(ref, inquiry, INQUIRIES_COL);
+  return inquiry;
+}
+
+export async function listBusinessInquiries(): Promise<BusinessInquiry[]> {
+  const map = new Map<string, BusinessInquiry>();
+  const cached = getLocalCache<BusinessInquiry>(INQUIRIES_COL);
+  cached.forEach(i => { if (i.id) map.set(i.id, i); });
+
+  try {
+    const snap = await getDocs(collection(db, INQUIRIES_COL));
+    snap.docs.forEach(d => map.set(d.id, d.data() as BusinessInquiry));
+  } catch (e) {
+    console.warn("Firestore listBusinessInquiries failed, serving local cache");
+  }
+
+  const list = Array.from(map.values());
+  return list.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+}
+
+export async function updateBusinessInquiryStatus(id: string, status: 'new' | 'contacted' | 'converted'): Promise<void> {
+  const ref = doc(db, INQUIRIES_COL, id);
+  await safeUpdateDoc(ref, id, { status, updatedAt: new Date().toISOString() }, INQUIRIES_COL);
+}
+
+export async function deleteBusinessInquiry(id: string): Promise<void> {
+  // Update local cache
+  try {
+    const cacheKey = 'luminous_cache_' + INQUIRIES_COL;
+    const existing = getLocalCache<BusinessInquiry>(INQUIRIES_COL);
+    const updated = existing.filter(i => i.id !== id);
+    localStorage.setItem(cacheKey, JSON.stringify(updated));
+  } catch (e) {}
 }

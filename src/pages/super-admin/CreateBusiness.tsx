@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { SuperAdminLayout } from '@/components/business/SuperAdminLayout';
 import { createBusiness, createDepartment, createLocation } from '@/lib/business/businessDb';
 import { registerBusinessUser } from '@/lib/business/businessAuth';
@@ -18,6 +18,7 @@ import {
 
 export const CreateBusiness: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -32,6 +33,22 @@ export const CreateBusiness: React.FC = () => {
   const [adminName, setAdminName] = useState('');
   const [adminEmail, setAdminEmail] = useState('');
   const [adminPassword, setAdminPassword] = useState('');
+
+  // Auto prefill from Enterprise Inquiry onboarding if navigated with state
+  useEffect(() => {
+    if (location.state?.prefill) {
+      const p = location.state.prefill;
+      if (p.name) {
+        setName(p.name);
+        setSlug(p.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, ''));
+      }
+      if (p.adminName) setAdminName(p.adminName);
+      if (p.adminEmail) setAdminEmail(p.adminEmail);
+      if (p.industryType && INDUSTRY_PRESETS.some((ind) => ind.name === p.industryType)) {
+        setIndustryType(p.industryType);
+      }
+    }
+  }, [location.state]);
 
   // Auto slug generation
   const handleNameChange = (val: string) => {
