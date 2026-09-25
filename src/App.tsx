@@ -8,6 +8,8 @@ import { Track } from './pages/Track';
 import { ReportDetail } from './pages/ReportDetail';
 import { AdminDashboard } from './pages/AdminDashboard';
 import { Login } from './pages/Login';
+import { MainHome } from './pages/MainHome';
+import { BusinessLanding } from './pages/BusinessLanding';
 import { AdminRoute } from './components/AdminRoute';
 import { motion, AnimatePresence } from 'motion/react';
 import { FirebaseProvider } from './lib/FirebaseProvider';
@@ -110,26 +112,32 @@ class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
   }
 }
 
-// Inner App Layout component to hide default Navbar/Footer on Business/SuperAdmin/Portal routes
+// Inner App Layout component to hide default Navbar/Footer on Business/SuperAdmin/Portal/MainHome routes
 const AppContent: React.FC = () => {
   const location = useLocation();
-  const isBusinessOrPortal = 
+  const isStandalonePage = 
+    location.pathname === '/' ||
+    location.pathname === '/business-platform' ||
     location.pathname.startsWith('/business') || 
     location.pathname.startsWith('/super-admin') || 
-    location.pathname.startsWith('/portal');
+    location.pathname.startsWith('/portal') ||
+    location.pathname === '/new_home';
 
   return (
     <div className="min-h-screen flex flex-col">
-      {!isBusinessOrPortal && <Navbar />}
+      {!isStandalonePage && <Navbar />}
       <main className="flex-grow">
         <AnimatePresence mode="wait">
           <Routes>
-            {/* EXISTING UNTOUCHED CIVIC ROUTES */}
-            <Route path="/" element={
+            {/* PLATFORM GATEWAY & REDESIGN ROUTES */}
+            <Route path="/" element={<MainHome />} />
+            <Route path="/business-platform" element={<BusinessLanding />} />
+            <Route path="/civic" element={
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
                 <Home />
               </motion.div>
             } />
+            <Route path="/new_home" element={<Navigate to="/" replace />} />
             <Route path="/login" element={
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
                 <Login />
@@ -198,7 +206,7 @@ const AppContent: React.FC = () => {
           </Routes>
         </AnimatePresence>
       </main>
-      {!isBusinessOrPortal && <Footer />}
+      {!isStandalonePage && <Footer />}
     </div>
   );
 };

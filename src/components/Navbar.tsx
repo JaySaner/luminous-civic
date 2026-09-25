@@ -6,6 +6,7 @@ import { useFirebase } from '../lib/FirebaseProvider';
 import { loginWithGoogle, logout } from '../lib/firebase';
 import { LogOut, User as UserIcon, Menu, X, ChevronRight, Globe } from 'lucide-react';
 import { useLanguage } from '../lib/LanguageProvider';
+import { LCLogo } from './common/LCLogo';
 
 const ADMIN_EMAIL = 'jaysaner2006@gmail.com';
 
@@ -19,19 +20,20 @@ export const Navbar = () => {
 
   const handleStartReporting = () => {
     setIsMobileMenuOpen(false);
-    if (location.pathname !== '/') {
-      navigate('/', { state: { scrollToReport: true } });
+    if (location.pathname !== '/civic') {
+      navigate('/civic', { state: { scrollToReport: true } });
     } else {
       document.getElementById('report')?.scrollIntoView({ behavior: 'smooth' });
     }
   };
 
   const navLinks = [
-    { name: t('home'), path: '/' },
+    { name: 'Main Home', path: '/' },
+    { name: t('home'), path: '/civic' },
     { name: t('dashboard'), path: '/dashboard' },
     { name: t('track'), path: '/track' },
-    { name: '🏢 Business Portal', path: '/business/login' },
-    ...(isAdmin ? [{ name: '🔒 Admin', path: '/admin' }] : []),
+    { name: 'Business Platform', path: '/business-platform' },
+    ...(isAdmin ? [{ name: 'Admin', path: '/admin' }] : []),
   ];
 
   // Hide global navbar on dashboard to avoid double headers
@@ -40,9 +42,7 @@ export const Navbar = () => {
   return (
     <nav className="fixed top-0 w-full z-50 bg-white/70 backdrop-blur-xl shadow-[0_40px_60px_-15px_rgba(25,28,30,0.06)]">
       <div className="flex justify-between items-center h-20 px-6 md:px-8 max-w-screen-2xl mx-auto">
-        <Link to="/" className="text-xl md:text-2xl font-extrabold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-purple-600 font-headline">
-          Luminous Civic
-        </Link>
+        <LCLogo />
         
         {/* Desktop Nav */}
         <div className="hidden md:flex items-center gap-8">

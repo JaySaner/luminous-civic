@@ -277,6 +277,47 @@ export async function updateBusiness(id: string, data: Partial<Business>): Promi
   await safeUpdateDoc(ref, id, updates, BUSINESSES_COL);
 }
 
+export async function updateBusinessAdminPassword(businessId: string, newPassword: string): Promise<void> {
+  const cleanPass = newPassword.trim();
+  const now = new Date().toISOString();
+
+  // 1. Update Business doc
+  await updateBusiness(businessId, {
+    adminPassword: cleanPass,
+    passwordHash: cleanPass,
+  } as any);
+
+  // 2. Update all matching business_users docs in Firestore & localStorage cache
+  try {
+    const q = query(collection(db, 'business_users'), where('businessId', '==', businessId));
+    const snap = await getDocs(q);
+    snap.docs.forEach(async (d) => {
+      await updateDoc(doc(db, 'business_users', d.id), {
+        passwordHash: cleanPass,
+        password: cleanPass,
+        updatedAt: now
+      });
+    });
+  } catch (e) {
+    console.warn('Firestore user password update failed, updating local cache:', e);
+  }
+
+  // 3. Update local cache
+  try {
+    const cacheKey = 'luminous_cache_business_users';
+    const existing = JSON.parse(localStorage.getItem(cacheKey) || '[]') as any[];
+    const updated = existing.map((u: any) => {
+      if (u.businessId === businessId || u.id === businessId) {
+        return { ...u, passwordHash: cleanPass, password: cleanPass };
+      }
+      return u;
+    });
+    localStorage.setItem(cacheKey, JSON.stringify(updated));
+  } catch (e) {
+    console.warn('Local storage cache update failed:', e);
+  }
+}
+
 // --- DEPARTMENTS & LOCATIONS ---
 
 export async function listDepartments(businessId: string): Promise<BusinessDepartment[]> {
@@ -571,10 +612,7 @@ export async function listBusinessIssues(
 
   // Filter strictly by businessId to prevent cross-business data leakage
   if (businessId) {
-    const matched = issues.filter(i => i.businessId === businessId || !i.businessId);
-    if (matched.length > 0) {
-      issues = matched;
-    }
+    issues = issues.filter(i => i.businessId === businessId);
   }
 
   if (filters?.status) issues = issues.filter(i => i.status === filters.status);

@@ -11,15 +11,17 @@ import {
   Search, 
   Filter, 
   PlusCircle, 
-  ExternalLink, 
-  MoreVertical, 
-  QrCode, 
   Globe, 
   Edit3, 
-  Trash2, 
-  ShieldCheck, 
   CheckCircle2, 
-  XCircle 
+  XCircle,
+  Key,
+  Eye,
+  EyeOff,
+  Lock,
+  X,
+  Mail,
+  Check
 } from 'lucide-react';
 
 export const BusinessManagement: React.FC = () => {
@@ -32,6 +34,14 @@ export const BusinessManagement: React.FC = () => {
 
   const [selectedBiz, setSelectedBiz] = useState<Business | null>(null);
   const [modalAction, setModalAction] = useState<'toggle' | 'delete' | null>(null);
+
+  // Admin Credentials & Password Management State
+  const [showPasswords, setShowPasswords] = useState<Record<string, boolean>>({});
+  const [changePasswordModalOpen, setChangePasswordModalOpen] = useState(false);
+  const [targetBizForPass, setTargetBizForPass] = useState<Business | null>(null);
+  const [newAdminPassword, setNewAdminPassword] = useState('');
+  const [updatingPass, setUpdatingPass] = useState(false);
+  const [passwordSuccessMsg, setPasswordSuccessMsg] = useState('');
 
   useEffect(() => {
     loadData();
@@ -54,13 +64,19 @@ export const BusinessManagement: React.FC = () => {
     let result = businesses;
     if (searchTerm) {
       const term = searchTerm.toLowerCase();
-      result = result.filter(b => b.name.toLowerCase().includes(term) || b.slug.toLowerCase().includes(term) || b.industryType.toLowerCase().includes(term));
+      result = result.filter(
+        b =>
+          b.name.toLowerCase().includes(term) ||
+          b.slug.toLowerCase().includes(term) ||
+          (b.industryType || b.industry || '').toLowerCase().includes(term) ||
+          (b.ownerEmail || b.adminEmail || b.email || '').toLowerCase().includes(term)
+      );
     }
     if (statusFilter !== 'all') {
       result = result.filter(b => b.status === statusFilter);
     }
     if (planFilter !== 'all') {
-      result = result.filter(b => b.subscriptionPlan === planFilter);
+      result = result.filter(b => (b.subscriptionPlan || b.plan) === planFilter);
     }
     setFiltered(result);
   }, [searchTerm, statusFilter, planFilter, businesses]);
@@ -74,14 +90,70 @@ export const BusinessManagement: React.FC = () => {
     setModalAction(null);
   };
 
+  const togglePasswordVisibility = (bizId: string) => {
+    setShowPasswords(prev => ({ ...prev, [bizId]: !prev[bizId] }));
+  };
+
+  const openChangePasswordModal = (biz: Business) => {
+    setTargetBizForPass(biz);
+    const currentPass = getAdminPasswordDisplay(biz);
+    setNewAdminPassword(currentPass);
+    setChangePasswordModalOpen(true);
+  };
+
+  const getAdminPasswordDisplay = (b: Business): string => {
+    if ((b as any).adminPassword) return (b as any).adminPassword;
+    if ((b as any).passwordHash) return (b as any).passwordHash;
+    try {
+      const cachedUsers = JSON.parse(localStorage.getItem('luminous_cache_business_users') || '[]') as any[];
+      const match = cachedUsers.find((u: any) => u.businessId === b.id || (u.email && u.email.toLowerCase() === (b.ownerEmail || b.email || '').toLowerCase()));
+      if (match?.passwordHash || match?.password) {
+        return match.passwordHash || match.password;
+      }
+    } catch (e) {}
+    return '123456';
+  };
+
+  const handleSaveNewPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!targetBizForPass || !newAdminPassword.trim()) return;
+
+    setUpdatingPass(true);
+    try {
+      const bizId = targetBizForPass.id;
+      const cleanPass = newAdminPassword.trim();
+
+      await updateBusinessAdminPassword(bizId, cleanPass);
+
+      setBusinesses(prev =>
+        prev.map(b =>
+          b.id === bizId
+            ? { ...b, adminPassword: cleanPass, passwordHash: cleanPass } as any
+            : b
+        )
+      );
+
+      setPasswordSuccessMsg(`Admin password for "${targetBizForPass.name}" updated successfully to "${cleanPass}"!`);
+      setTimeout(() => setPasswordSuccessMsg(''), 4000);
+      setChangePasswordModalOpen(false);
+      setTargetBizForPass(null);
+      setNewAdminPassword('');
+    } catch (e: any) {
+      alert('Failed to update password: ' + (e?.message || e));
+    } finally {
+      setUpdatingPass(false);
+    }
+  };
+
   return (
     <SuperAdminLayout>
       <div className="space-y-6 animate-fade-in">
+        
         {/* Header */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <h1 className="text-2xl font-extrabold text-white tracking-tight">Business & Industry Tenants</h1>
-            <p className="text-sm text-slate-400">View, manage, and configure all onboarded organizations across the platform.</p>
+            <p className="text-sm text-slate-400">View organization admin credentials, manage passwords, and configure onboarded tenants.</p>
           </div>
           <Link
             to="/super-admin/businesses/new"
@@ -91,13 +163,21 @@ export const BusinessManagement: React.FC = () => {
           </Link>
         </div>
 
+        {/* Success Alert Banner */}
+        {passwordSuccessMsg && (
+          <div className="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-sm font-semibold flex items-center gap-2 shadow-lg">
+            <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
+            <span>{passwordSuccessMsg}</span>
+          </div>
+        )}
+
         {/* Filters & Search */}
         <div className="flex flex-col sm:flex-row gap-4 items-center justify-between bg-slate-900/60 p-4 rounded-2xl border border-slate-800/80 backdrop-blur-xl">
           <div className="relative w-full sm:w-80">
             <Search className="w-4 h-4 absolute left-3.5 top-3 text-slate-400" />
             <input
               type="text"
-              placeholder="Search business name, slug, industry..."
+              placeholder="Search business, email, slug..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full pl-10 pr-4 py-2 rounded-xl bg-slate-950 border border-slate-800 text-slate-200 text-sm focus:outline-none focus:border-cyan-500"
@@ -134,7 +214,7 @@ export const BusinessManagement: React.FC = () => {
 
         {/* Table View */}
         {loading ? (
-          <div className="p-12 text-center text-slate-400">Loading business tenants...</div>
+          <div className="p-12 text-center text-slate-400">Loading business tenants & credentials...</div>
         ) : filtered.length === 0 ? (
           <EmptyState
             title="No Businesses Match Filters"
@@ -148,76 +228,117 @@ export const BusinessManagement: React.FC = () => {
               <thead className="bg-slate-950/80 text-xs uppercase tracking-wider text-slate-400 border-b border-slate-800">
                 <tr>
                   <th className="py-4 px-5">Organization</th>
-                  <th className="py-4 px-5">Industry</th>
-                  <th className="py-4 px-5">Public Portal Link</th>
-                  <th className="py-4 px-5">Plan</th>
+                  <th className="py-4 px-5">Admin Email</th>
+                  <th className="py-4 px-5">Admin Password</th>
+                  <th className="py-4 px-5">Portal Link</th>
                   <th className="py-4 px-5">Status</th>
                   <th className="py-4 px-5 text-right">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-800/50">
-                {filtered.map((b) => (
-                  <tr key={b.id} className="hover:bg-slate-800/30 transition">
-                    <td className="py-4 px-5">
-                      <div className="flex items-center gap-3">
-                        {b.logoUrl ? (
-                          <img src={b.logoUrl} alt={b.name} className="w-10 h-10 rounded-xl object-cover border border-slate-700" />
-                        ) : (
-                          <div className="w-10 h-10 rounded-xl bg-cyan-500/20 text-cyan-400 font-bold flex items-center justify-center border border-cyan-500/30 text-sm">
-                            {b.name.charAt(0)}
+                {filtered.map((b) => {
+                  const adminEmailStr = b.ownerEmail || b.adminEmail || b.email || `admin@${b.slug}.com`;
+                  const adminPassStr = getAdminPasswordDisplay(b);
+                  const isPassVisible = showPasswords[b.id];
+
+                  return (
+                    <tr key={b.id} className="hover:bg-slate-800/30 transition">
+                      <td className="py-4 px-5">
+                        <div className="flex items-center gap-3">
+                          {b.logoUrl ? (
+                            <img src={b.logoUrl} alt={b.name} className="w-10 h-10 rounded-xl object-cover border border-slate-700" />
+                          ) : (
+                            <div className="w-10 h-10 rounded-xl bg-cyan-500/20 text-cyan-400 font-bold flex items-center justify-center border border-cyan-500/30 text-sm">
+                              {b.name.charAt(0)}
+                            </div>
+                          )}
+                          <div>
+                            <div className="font-bold text-white text-base">{b.name}</div>
+                            <div className="text-xs text-slate-400 font-medium">{b.industryType || b.industry || 'Enterprise'}</div>
                           </div>
-                        )}
-                        <div>
-                          <div className="font-bold text-white text-base">{b.name}</div>
-                          <div className="text-xs text-slate-400 font-mono">ID: {b.id}</div>
                         </div>
-                      </div>
-                    </td>
-                    <td className="py-4 px-5 text-xs text-slate-300 font-medium">{b.industryType}</td>
-                    <td className="py-4 px-5">
-                      <a
-                        href={`/portal/${b.slug}`}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="inline-flex items-center gap-1.5 text-xs font-mono text-cyan-400 hover:underline bg-slate-950 px-2.5 py-1 rounded-lg border border-slate-800"
-                      >
-                        <Globe className="w-3.5 h-3.5" /> /portal/{b.slug}
-                      </a>
-                    </td>
-                    <td className="py-4 px-5">
-                      <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-purple-500/10 text-purple-400 border border-purple-500/20">
-                        {b.subscriptionPlan}
-                      </span>
-                    </td>
-                    <td className="py-4 px-5">
-                      <StatusBadge status={b.status} />
-                    </td>
-                    <td className="py-4 px-5 text-right">
-                      <div className="flex items-center justify-end gap-2">
-                        <Link
-                          to={`/super-admin/businesses/${b.id}`}
-                          className="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-cyan-400 transition"
-                          title="Manage Tenant"
+                      </td>
+
+                      {/* Admin Email */}
+                      <td className="py-4 px-5">
+                        <div className="flex items-center gap-1.5 text-xs text-slate-200 font-mono bg-slate-950/60 px-2.5 py-1 rounded-lg border border-slate-800 w-fit">
+                          <Mail className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
+                          <span>{adminEmailStr}</span>
+                        </div>
+                      </td>
+
+                      {/* Admin Password */}
+                      <td className="py-4 px-5">
+                        <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-1.5 text-xs font-mono bg-slate-950/80 px-2.5 py-1 rounded-lg border border-slate-800 text-slate-200">
+                            <Lock className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                            <span>{isPassVisible ? adminPassStr : '••••••••'}</span>
+                          </div>
+                          <button
+                            onClick={() => togglePasswordVisibility(b.id)}
+                            className="p-1 text-slate-400 hover:text-white transition"
+                            title={isPassVisible ? 'Hide Password' : 'Show Password'}
+                          >
+                            {isPassVisible ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                          </button>
+                        </div>
+                      </td>
+
+                      {/* Portal Link */}
+                      <td className="py-4 px-5">
+                        <a
+                          href={`/portal/${b.slug}`}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="inline-flex items-center gap-1.5 text-xs font-mono text-cyan-400 hover:underline bg-slate-950 px-2.5 py-1 rounded-lg border border-slate-800"
                         >
-                          <Edit3 className="w-4 h-4" />
-                        </Link>
-                        <button
-                          onClick={() => { setSelectedBiz(b); setModalAction('toggle'); }}
-                          className={`p-2 rounded-lg transition ${b.status === 'active' ? 'bg-amber-500/10 text-amber-400 hover:bg-amber-500/20' : 'bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20'}`}
-                          title={b.status === 'active' ? 'Deactivate' : 'Activate'}
-                        >
-                          {b.status === 'active' ? <XCircle className="w-4 h-4" /> : <CheckCircle2 className="w-4 h-4" />}
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                          <Globe className="w-3.5 h-3.5" /> /portal/{b.slug}
+                        </a>
+                      </td>
+
+                      {/* Status */}
+                      <td className="py-4 px-5">
+                        <StatusBadge status={b.status} />
+                      </td>
+
+                      {/* Actions */}
+                      <td className="py-4 px-5 text-right">
+                        <div className="flex items-center justify-end gap-2">
+                          <button
+                            onClick={() => openChangePasswordModal(b)}
+                            className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 text-xs font-semibold transition"
+                            title="Change Admin Password"
+                          >
+                            <Key className="w-3.5 h-3.5" />
+                            <span>Pass</span>
+                          </button>
+
+                          <Link
+                            to={`/super-admin/businesses/${b.id}`}
+                            className="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-cyan-400 transition"
+                            title="Manage Tenant"
+                          >
+                            <Edit3 className="w-4 h-4" />
+                          </Link>
+
+                          <button
+                            onClick={() => { setSelectedBiz(b); setModalAction('toggle'); }}
+                            className={`p-2 rounded-lg transition ${b.status === 'active' ? 'bg-amber-500/10 text-amber-400 hover:bg-amber-500/20' : 'bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20'}`}
+                            title={b.status === 'active' ? 'Deactivate' : 'Activate'}
+                          >
+                            {b.status === 'active' ? <XCircle className="w-4 h-4" /> : <CheckCircle2 className="w-4 h-4" />}
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
         )}
 
-        {/* Modal for status toggle */}
+        {/* Status Toggle Modal */}
         <ConfirmModal
           isOpen={modalAction === 'toggle' && !!selectedBiz}
           title={`${selectedBiz?.status === 'active' ? 'Deactivate' : 'Activate'} ${selectedBiz?.name}?`}
@@ -226,6 +347,72 @@ export const BusinessManagement: React.FC = () => {
           onConfirm={handleToggleStatus}
           onCancel={() => { setSelectedBiz(null); setModalAction(null); }}
         />
+
+        {/* Change Password Modal */}
+        {changePasswordModalOpen && targetBizForPass && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
+            <div className="w-full max-w-md bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-2xl space-y-5 relative">
+              <button
+                onClick={() => setChangePasswordModalOpen(false)}
+                className="absolute top-4 right-4 text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800"
+              >
+                <X className="w-5 h-5" />
+              </button>
+
+              <div className="space-y-1">
+                <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+                  <Key className="w-3.5 h-3.5 text-indigo-400" /> Admin Password Management
+                </div>
+                <h3 className="text-xl font-bold text-white">Change Admin Password</h3>
+                <p className="text-xs text-slate-400">
+                  Update login credentials for <strong className="text-white">{targetBizForPass.name}</strong>
+                </p>
+              </div>
+
+              <form onSubmit={handleSaveNewPassword} className="space-y-4">
+                <div className="space-y-1">
+                  <label className="block text-xs font-semibold text-slate-300">Admin Email Address</label>
+                  <div className="px-3.5 py-2 rounded-xl bg-slate-950 border border-slate-800 text-xs font-mono text-cyan-300">
+                    {targetBizForPass.ownerEmail || targetBizForPass.adminEmail || targetBizForPass.email || `admin@${targetBizForPass.slug}.com`}
+                  </div>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="block text-xs font-semibold text-slate-300">New Password *</label>
+                  <div className="relative">
+                    <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
+                    <input
+                      type="text"
+                      required
+                      value={newAdminPassword}
+                      onChange={(e) => setNewAdminPassword(e.target.value)}
+                      placeholder="Enter new admin password"
+                      className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-white font-mono text-sm focus:outline-none focus:border-indigo-500"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex justify-end gap-3 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setChangePasswordModalOpen(false)}
+                    className="px-4 py-2.5 rounded-xl border border-slate-800 text-xs font-semibold text-slate-400 hover:text-white"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={updatingPass}
+                    className="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold shadow-lg transition flex items-center gap-1.5"
+                  >
+                    {updatingPass ? 'Saving...' : 'Update Admin Password'}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
       </div>
     </SuperAdminLayout>
   );

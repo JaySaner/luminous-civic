@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useBusinessContext } from '@/components/business/BusinessContext';
+import { LCLogo } from '@/components/common/LCLogo';
 import { Building2, Shield, Lock, Mail, ArrowRight, Sparkles, Loader2, Globe, Eye, EyeOff } from 'lucide-react';
 
 export const BusinessLogin: React.FC = () => {
@@ -67,9 +68,10 @@ export const BusinessLogin: React.FC = () => {
       <div className="absolute bottom-1/4 -right-32 w-96 h-96 bg-cyan-500/15 rounded-full blur-3xl pointer-events-none" />
 
       {/* Top Brand Link */}
-      <div className="absolute top-8 left-8">
-        <Link to="/" className="inline-flex items-center gap-2 text-xs font-semibold text-slate-400 hover:text-white bg-slate-900/60 px-4 py-2 rounded-full border border-slate-800 backdrop-blur-md transition">
-          <Globe className="w-3.5 h-3.5 text-cyan-400" /> Back to Main Civic Portal
+      <div className="absolute top-8 left-8 flex items-center gap-4">
+        <LCLogo darkBg />
+        <Link to="/" className="hidden sm:inline-flex items-center gap-2 text-xs font-semibold text-slate-400 hover:text-white bg-slate-900/60 px-4 py-2 rounded-full border border-slate-800 backdrop-blur-md transition">
+          <Globe className="w-3.5 h-3.5 text-cyan-400" /> Back to Main Landing
         </Link>
       </div>
 
@@ -122,17 +124,7 @@ export const BusinessLogin: React.FC = () => {
             </div>
           )}
 
-          {activeTab === 'business' && (
-            <div className="p-3 rounded-xl bg-blue-500/5 border border-blue-500/20 text-blue-300 text-xs">
-              <strong>Business Admin Login:</strong> Use the email and password created for your business by the platform administrator.
-            </div>
-          )}
 
-          {activeTab === 'super_admin' && (
-            <div className="p-3 rounded-xl bg-cyan-500/5 border border-cyan-500/20 text-cyan-300 text-xs">
-              <strong>Super Admin Login:</strong> Use your registered super admin email and password.
-            </div>
-          )}
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
