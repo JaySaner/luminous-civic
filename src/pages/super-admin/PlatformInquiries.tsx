@@ -22,7 +22,8 @@ import {
   Clock,
   MessageSquare,
   MapPin,
-  Send
+  Send,
+  RefreshCw
 } from 'lucide-react';
 
 export const PlatformInquiries: React.FC = () => {
@@ -30,16 +31,27 @@ export const PlatformInquiries: React.FC = () => {
   const [inquiries, setInquiries] = useState<BusinessInquiry[]>([]);
   const [filtered, setFiltered] = useState<BusinessInquiry[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [successMsg, setSuccessMsg] = useState('');
 
   useEffect(() => {
     loadInquiries();
+
+    // Auto-refresh when localStorage is updated in another tab
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key?.includes('business_inquiries')) {
+        loadInquiries(true);
+      }
+    };
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
   }, []);
 
-  async function loadInquiries() {
-    setLoading(true);
+  async function loadInquiries(silent = false) {
+    if (!silent) setLoading(true);
+    setRefreshing(true);
     try {
       const data = await listBusinessInquiries();
       setInquiries(data);
@@ -48,6 +60,7 @@ export const PlatformInquiries: React.FC = () => {
       console.error(e);
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
   }
 
@@ -84,9 +97,7 @@ export const PlatformInquiries: React.FC = () => {
   };
 
   const handleConvertToTenant = (inquiry: BusinessInquiry) => {
-    // Mark as converted
     handleStatusChange(inquiry.id, 'converted');
-    // Pre-fill CreateBusiness form via state navigation
     navigate('/super-admin/businesses/new', {
       state: {
         prefill: {
@@ -124,6 +135,15 @@ export const PlatformInquiries: React.FC = () => {
             <h1 className="text-2xl font-extrabold text-white tracking-tight">Business Platform Inquiries</h1>
             <p className="text-sm text-slate-400">Review demo requests submitted from the Business & Industry landing page and convert leads into active tenants.</p>
           </div>
+
+          <button
+            onClick={() => loadInquiries(false)}
+            disabled={refreshing}
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-900 border border-slate-800 hover:border-slate-700 text-slate-300 hover:text-white text-xs font-bold transition shadow"
+          >
+            <RefreshCw className={`w-4 h-4 text-cyan-400 ${refreshing ? 'animate-spin' : ''}`} />
+            <span>Refresh Inquiries</span>
+          </button>
         </div>
 
         {/* Success Banner */}
